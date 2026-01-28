@@ -36,7 +36,7 @@ import {
     Typography,
     TablePagination
 } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon, Search as SearchIcon, Close as CloseIcon, Add as AddIcon } from '@mui/icons-material';
+import { Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon, Search as SearchIcon, Close as CloseIcon, Add as AddIcon, FilterList as FilterListIcon, Business as BusinessIcon, AccountCircle as AccountCircleIcon } from '@mui/icons-material';
 // import { useKeycloak } from '@react-keycloak/web';
 import userService, { setKeycloakInstance } from '../services/userService';  // Echter userService für Backend-API
 // import userService, { setKeycloakInstance } from '../services/mockUserService';  // Mock-Daten für lokale Tests ohne Backend
@@ -109,6 +109,9 @@ const Benutzerliste = () => {
     // Pagination-State
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(50);
+
+    // View Mode (table oder cards)
+    const [viewMode, setViewMode] = useState('cards'); // 'table' oder 'cards'
 
     // Debouncing-Timer für Suche
     const searchTimerRef = useRef(null);
@@ -485,10 +488,74 @@ const Benutzerliste = () => {
             width: '100%',
             overflow: 'hidden'
         }}>
-            {/* Filter Card mit "Neuer Benutzer"-Button */}
-            <Box sx={{ mb: 2, mx: 2, mt: 2, display: 'flex', gap: 2, alignItems: 'flex-start', flexShrink: 0 }}>
-                <Card sx={{ flex: 1, p: 3, background: 'linear-gradient(135deg, #F5F7FA 0%, #FFFFFF 100%)', borderLeft: '4px solid #4169E1' }}>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' }, gap: 2 }}>
+            {/* Moderne Filter Card */}
+            <Box sx={{ mb: 3, mx: 2, mt: 2, flexShrink: 0 }}>
+                <Card
+                    elevation={0}
+                    sx={{
+                        p: 3,
+                        background: 'linear-gradient(135deg, rgba(65, 105, 225, 0.05) 0%, rgba(255, 255, 255, 1) 100%)',
+                        border: '1px solid rgba(65, 105, 225, 0.1)',
+                        backdropFilter: 'blur(10px)',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                            boxShadow: '0 8px 24px rgba(65, 105, 225, 0.15)',
+                            borderColor: 'rgba(65, 105, 225, 0.3)',
+                        }
+                    }}
+                >
+                    {/* Header mit Button */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Box sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: 48,
+                                height: 48,
+                                borderRadius: '14px',
+                                background: 'linear-gradient(135deg, #4169E1 0%, #2E4CB8 100%)',
+                                boxShadow: '0 4px 14px rgba(65, 105, 225, 0.3)',
+                            }}>
+                                <FilterListIcon sx={{ color: 'white', fontSize: 24 }} />
+                            </Box>
+                            <Box>
+                                <Typography variant="h6" sx={{ fontWeight: 700, color: '#2E4CB8', lineHeight: 1.2 }}>
+                                    Benutzer suchen & filtern
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: '#666', display: 'block' }}>
+                                    {users.length} Benutzer gefunden
+                                </Typography>
+                            </Box>
+                        </Box>
+                        <Button
+                            variant="contained"
+                            size="large"
+                            startIcon={<AddIcon />}
+                            onClick={handleOpenCreateForm}
+                            sx={{
+                                px: 4,
+                                py: 1.5,
+                                borderRadius: 3,
+                                background: 'linear-gradient(135deg, #4CAF50 0%, #45A049 100%)',
+                                fontSize: '1rem',
+                                fontWeight: 700,
+                                textTransform: 'none',
+                                boxShadow: '0 4px 14px rgba(76, 175, 80, 0.4)',
+                                '&:hover': {
+                                    background: 'linear-gradient(135deg, #45A049 0%, #388E3C 100%)',
+                                    transform: 'translateY(-2px)',
+                                    boxShadow: '0 6px 20px rgba(76, 175, 80, 0.5)',
+                                },
+                                transition: 'all 0.3s ease',
+                            }}
+                        >
+                            Neuer Benutzer
+                        </Button>
+                    </Box>
+
+                    {/* Filter-Felder */}
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2 }}>
                         <TextField
                             fullWidth
                             label="Benutzer suchen"
@@ -496,11 +563,10 @@ const Benutzerliste = () => {
                             value={searchTerm}
                             onChange={handleNameSearch}
                             variant="outlined"
-                            size="small"
                             InputProps={{
                                 startAdornment: (
                                     <InputAdornment position="start">
-                                        <SearchIcon sx={{ color: '#4169E1', mr: 1 }} />
+                                        <SearchIcon sx={{ color: '#4169E1' }} />
                                     </InputAdornment>
                                 ),
                                 endAdornment: searchTerm && (
@@ -509,9 +575,16 @@ const Benutzerliste = () => {
                                             <Button
                                                 size="small"
                                                 onClick={() => handleNameSearch({ target: { value: '' } })}
-                                                sx={{ minWidth: 'auto', p: 0 }}
+                                                sx={{
+                                                    minWidth: 'auto',
+                                                    p: 0.5,
+                                                    borderRadius: '50%',
+                                                    '&:hover': {
+                                                        backgroundColor: 'rgba(65, 105, 225, 0.1)',
+                                                    }
+                                                }}
                                             >
-                                                <CloseIcon sx={{ fontSize: 18 }} />
+                                                <CloseIcon sx={{ fontSize: 20 }} />
                                             </Button>
                                         </Tooltip>
                                     </InputAdornment>
@@ -519,12 +592,16 @@ const Benutzerliste = () => {
                             }}
                             sx={{
                                 '& .MuiOutlinedInput-root': {
+                                    backgroundColor: 'white',
+                                    borderRadius: 2,
                                     '&:hover fieldset': {
                                         borderColor: '#4169E1',
+                                        borderWidth: 2,
                                     },
                                     '&.Mui-focused fieldset': {
                                         borderColor: '#4169E1',
-                                        boxShadow: '0 0 0 3px rgba(65, 105, 225, 0.1)',
+                                        borderWidth: 2,
+                                        boxShadow: '0 0 0 4px rgba(65, 105, 225, 0.1)',
                                     },
                                 },
                             }}
@@ -532,27 +609,30 @@ const Benutzerliste = () => {
                         <TextField
                             fullWidth
                             select
-                            label="Nach Organisation filtern"
+                            label="Organisation"
                             value={organisationFilter}
                             onChange={handleOrganisationFilter}
                             variant="outlined"
-                            size="small"
                             SelectProps={{
                                 native: true,
                             }}
                             sx={{
                                 '& .MuiOutlinedInput-root': {
+                                    backgroundColor: 'white',
+                                    borderRadius: 2,
                                     '&:hover fieldset': {
                                         borderColor: '#4169E1',
+                                        borderWidth: 2,
                                     },
                                     '&.Mui-focused fieldset': {
                                         borderColor: '#4169E1',
-                                        boxShadow: '0 0 0 3px rgba(65, 105, 225, 0.1)',
+                                        borderWidth: 2,
+                                        boxShadow: '0 0 0 4px rgba(65, 105, 225, 0.1)',
                                     },
                                 },
                             }}
                         >
-                            <option value=""> </option>
+                            <option value="">Alle Organisationen</option>
                             {organisations.map((org) => (
                                 <option key={org} value={org}>
                                     {org}
@@ -562,27 +642,30 @@ const Benutzerliste = () => {
                         <TextField
                             fullWidth
                             select
-                            label="Nach Rolle filtern"
+                            label="Rolle"
                             value={roleFilter}
                             onChange={handleRoleFilter}
                             variant="outlined"
-                            size="small"
                             SelectProps={{
                                 native: true,
                             }}
                             sx={{
                                 '& .MuiOutlinedInput-root': {
+                                    backgroundColor: 'white',
+                                    borderRadius: 2,
                                     '&:hover fieldset': {
                                         borderColor: '#4169E1',
+                                        borderWidth: 2,
                                     },
                                     '&.Mui-focused fieldset': {
                                         borderColor: '#4169E1',
-                                        boxShadow: '0 0 0 3px rgba(65, 105, 225, 0.1)',
+                                        borderWidth: 2,
+                                        boxShadow: '0 0 0 4px rgba(65, 105, 225, 0.1)',
                                     },
                                 },
                             }}
                         >
-                            <option value=""></option>
+                            <option value="">Alle Rollen</option>
                             {availableRoles.map((role, index) => (
                                 <option key={role.id || `role-${index}`} value={role.label}>
                                     {role.label}
@@ -591,29 +674,6 @@ const Benutzerliste = () => {
                         </TextField>
                     </Box>
                 </Card>
-
-                {/* Button "Neuer Benutzer" */}
-                <Box>
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={handleOpenCreateForm}
-                        sx={{
-                            height: '100%',
-                            minHeight: 56,
-                            px: 3,
-                            background: 'linear-gradient(135deg, #4CAF50 0%, #45A049 100%)',
-                            '&:hover': {
-                                background: 'linear-gradient(135deg, #45A049 0%, #388E3C 100%)',
-                                transform: 'translateY(-2px)',
-                                boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)',
-                            },
-                            transition: 'all 0.3s ease',
-                        }}
-                    >
-                        Neuer Benutzer
-                    </Button>
-                </Box>
             </Box>
 
             {error && (
@@ -631,212 +691,273 @@ const Benutzerliste = () => {
                     <CircularProgress sx={{ color: '#4169E1' }} />
                 </Box>
             ) : (
-                <TableContainer
-                    component={Paper}
-                    sx={{
-                        boxShadow: '0 4px 12px rgba(65, 105, 225, 0.12)',
-                        borderRadius: 0,
-                        overflow: 'auto',
-                        flex: 1,
+                <>
+                    {/* Moderne Card-Ansicht */}
+                    <Box sx={{
+                        display: 'grid',
+                        gridTemplateColumns: {
+                            xs: '1fr',
+                            sm: 'repeat(2, 1fr)',
+                            lg: 'repeat(3, 1fr)',
+                            xl: 'repeat(4, 1fr)'
+                        },
+                        gap: 2.5,
                         mx: 2,
-                        mb: 2
-                    }}
-                >
-                    <Table sx={{ minWidth: 750 }}>
-                        <TableHead>
-                            <TableRow sx={{ backgroundColor: '#4169E1' }}>
-                                <TableCell sx={{ color: '#FFFFFF', fontWeight: 700 }}>Benutzername</TableCell>
-                                <TableCell sx={{ color: '#FFFFFF', fontWeight: 700 }}>Vorname</TableCell>
-                                <TableCell sx={{ color: '#FFFFFF', fontWeight: 700 }}>Nachname</TableCell>
-                                <TableCell sx={{ color: '#FFFFFF', fontWeight: 700 }}>Email</TableCell>
-                                <TableCell sx={{ color: '#FFFFFF', fontWeight: 700 }}>Organisationen & Rollen</TableCell>
-                                <TableCell sx={{ color: '#FFFFFF', fontWeight: 700 }}>Aktionen</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {displayedUsers.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} align="center" sx={{ py: 4, color: '#9E9E9E' }}>
-                                        <Box sx={{ fontSize: 14 }}>Keine Benutzer gefunden</Box>
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                displayedUsers.map((user, index) => {
-                                    // Get all active (not deleted) organizations
-                                    const activeOrgs = user.organisations?.filter(org => !org.deleted) || [];
+                        mb: 3,
+                        flex: 1,
+                        overflowY: 'auto'
+                    }}>
+                        {displayedUsers.length === 0 ? (
+                            <Box sx={{ gridColumn: '1 / -1', textAlign: 'center', py: 8 }}>
+                                <Typography variant="h6" sx={{ color: '#9E9E9E', fontWeight: 500 }}>
+                                    Keine Benutzer gefunden
+                                </Typography>
+                            </Box>
+                        ) : (
+                            displayedUsers.map((user) => {
+                                const activeOrgs = user.organisations?.filter(org => !org.deleted) || [];
+                                const initials = `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`;
 
-                                    return (
-                                        <TableRow
-                                            key={user.userUid}
-                                            hover
-                                            sx={{
-                                                backgroundColor: index % 2 === 0 ? '#F5F7FA' : '#FFFFFF',
-                                                '&:hover': {
-                                                    backgroundColor: '#E8EEF7',
+                                return (
+                                    <Card
+                                        key={user.userUid}
+                                        elevation={0}
+                                        sx={{
+                                            p: 3,
+                                            border: '1px solid rgba(0, 0, 0, 0.08)',
+                                            borderRadius: 3,
+                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                            cursor: 'pointer',
+                                            position: 'relative',
+                                            overflow: 'visible',
+                                            '&:hover': {
+                                                transform: 'translateY(-8px)',
+                                                boxShadow: '0 12px 24px rgba(65, 105, 225, 0.15)',
+                                                borderColor: 'rgba(65, 105, 225, 0.3)',
+                                                '& .action-buttons': {
+                                                    opacity: 1,
+                                                    transform: 'translateY(0)',
                                                 },
+                                            },
+                                        }}
+                                        onClick={() => handleViewDetails(user.userUid)}
+                                    >
+                                        {/* Avatar & Name */}
+                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                            <Box sx={{
+                                                width: 56,
+                                                height: 56,
+                                                borderRadius: '16px',
+                                                background: 'linear-gradient(135deg, #4169E1 0%, #2E4CB8 100%)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                boxShadow: '0 4px 14px rgba(65, 105, 225, 0.3)',
+                                                mr: 2,
+                                            }}>
+                                                <Typography variant="h6" sx={{ color: 'white', fontWeight: 700 }}>
+                                                    {initials || '?'}
+                                                </Typography>
+                                            </Box>
+                                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                <Typography variant="h6" sx={{
+                                                    fontWeight: 700,
+                                                    color: '#2E4CB8',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap'
+                                                }}>
+                                                    {user.firstName} {user.lastName}
+                                                </Typography>
+                                                <Typography variant="body2" sx={{ color: '#666', fontSize: '0.875rem' }}>
+                                                    @{user.username || '-'}
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+
+                                        {/* Email */}
+                                        <Box sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 1,
+                                            mb: 2,
+                                            p: 1.5,
+                                            backgroundColor: 'rgba(65, 105, 225, 0.05)',
+                                            borderRadius: 2,
+                                        }}>
+                                            <Typography variant="body2" sx={{
+                                                color: '#4169E1',
+                                                fontWeight: 500,
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap'
+                                            }}>
+                                                {user.mail || 'Keine E-Mail'}
+                                            </Typography>
+                                        </Box>
+
+                                        {/* Organisationen */}
+                                        {activeOrgs.length > 0 && (
+                                            <Box sx={{ mb: 2 }}>
+                                                <Typography variant="caption" sx={{
+                                                    color: '#666',
+                                                    fontWeight: 600,
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: 0.5,
+                                                    display: 'block',
+                                                    mb: 1
+                                                }}>
+                                                    Organisationen
+                                                </Typography>
+                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8 }}>
+                                                    {activeOrgs.slice(0, 2).map((org, idx) => (
+                                                        <Chip
+                                                            key={idx}
+                                                            label={org.orgName}
+                                                            size="small"
+                                                            icon={<BusinessIcon sx={{ fontSize: 14 }} />}
+                                                            sx={{
+                                                                backgroundColor: '#FF9800',
+                                                                color: 'white',
+                                                                fontWeight: 600,
+                                                                fontSize: '0.75rem',
+                                                                '& .MuiChip-icon': { color: 'white' }
+                                                            }}
+                                                        />
+                                                    ))}
+                                                    {activeOrgs.length > 2 && (
+                                                        <Chip
+                                                            label={`+${activeOrgs.length - 2}`}
+                                                            size="small"
+                                                            sx={{
+                                                                backgroundColor: '#E0E0E0',
+                                                                color: '#666',
+                                                                fontWeight: 600,
+                                                                fontSize: '0.75rem',
+                                                            }}
+                                                        />
+                                                    )}
+                                                </Box>
+                                            </Box>
+                                        )}
+
+                                        {/* Action Buttons */}
+                                        <Box
+                                            className="action-buttons"
+                                            sx={{
+                                                display: 'flex',
+                                                gap: 1,
+                                                mt: 2,
+                                                pt: 2,
+                                                borderTop: '1px solid rgba(0, 0, 0, 0.08)',
+                                                opacity: 0,
+                                                transform: 'translateY(-10px)',
                                                 transition: 'all 0.3s ease',
                                             }}
+                                            onClick={(e) => e.stopPropagation()}
                                         >
-                                            <TableCell sx={{ fontWeight: 600, color: '#4169E1' }}>@{user.username || '-'}</TableCell>
-                                            <TableCell sx={{ fontWeight: 500 }}>{user.firstName || '-'}</TableCell>
-                                            <TableCell sx={{ fontWeight: 500 }}>{user.lastName || '-'}</TableCell>
-                                            <TableCell sx={{ color: '#4169E1', fontSize: 13 }}>{user.mail || '-'}</TableCell>
-                                            <TableCell>
-                                                {activeOrgs.length > 0 ? (
-                                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.8 }}>
-                                                        {activeOrgs.slice(0, 2).map((org, orgIdx) => (
-                                                            <Box
-                                                                key={`${user.userUid}-org-${orgIdx}`}
-                                                                sx={{
-                                                                    display: 'flex',
-                                                                    flexWrap: 'wrap',
-                                                                    alignItems: 'center',
-                                                                    gap: 0.5,
-                                                                    p: 0.8,
-                                                                    backgroundColor: '#F9FAFB',
-                                                                    borderRadius: 1,
-                                                                    border: '1px solid #E5E7EB'
-                                                                }}
-                                                            >
-                                                                <Chip
-                                                                    label={org.orgName}
-                                                                    size="small"
-                                                                    sx={{
-                                                                        backgroundColor: '#FF9800',
-                                                                        color: '#FFFFFF',
-                                                                        fontWeight: 700,
-                                                                        height: 22,
-                                                                    }}
-                                                                />
-                                                                {org.roles && org.roles.length > 0 ? (
-                                                                    org.roles.map((role, roleIdx) => (
-                                                                        <Chip
-                                                                            key={`${user.userUid}-org-${orgIdx}-role-${roleIdx}`}
-                                                                            label={role.roleName}
-                                                                            size="small"
-                                                                            sx={{
-                                                                                backgroundColor: '#4169E1',
-                                                                                color: '#FFFFFF',
-                                                                                fontWeight: 600,
-                                                                                height: 22,
-                                                                            }}
-                                                                        />
-                                                                    ))
-                                                                ) : (
-                                                                    <Typography variant="caption" sx={{ color: '#9E9E9E', fontSize: 11 }}>
-                                                                        Keine Rollen
-                                                                    </Typography>
-                                                                )}
-                                                            </Box>
-                                                        ))}
-                                                        {activeOrgs.length > 2 && (
-                                                            <Chip
-                                                                label={`+${activeOrgs.length - 2} weitere`}
-                                                                size="small"
-                                                                onClick={() => handleViewDetails(user.userUid)}
-                                                                sx={{
-                                                                    backgroundColor: '#E0E0E0',
-                                                                    color: '#666',
-                                                                    fontWeight: 600,
-                                                                    cursor: 'pointer',
-                                                                    width: 'fit-content',
-                                                                    '&:hover': {
-                                                                        backgroundColor: '#D0D0D0',
-                                                                    },
-                                                                }}
-                                                            />
-                                                        )}
-                                                    </Box>
-                                                ) : (
-                                                    <Typography variant="body2" sx={{ color: '#9E9E9E' }}>-</Typography>
-                                                )}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                    <Tooltip title="Details anzeigen">
-                                                        <Button
-                                                            size="small"
-                                                            startIcon={<VisibilityIcon />}
-                                                            onClick={() => handleViewDetails(user.userUid)}
-                                                            variant="outlined"
-                                                            sx={{
-                                                                color: '#4169E1',
-                                                                borderColor: '#4169E1',
-                                                                '&:hover': {
-                                                                    backgroundColor: '#E8EEF7',
-                                                                    borderColor: '#2E4CB8',
-                                                                },
-                                                            }}
-                                                        >
-                                                            Details
-                                                        </Button>
-                                                    </Tooltip>
-                                                    <Tooltip title="Benutzer bearbeiten">
-                                                        <Button
-                                                            size="small"
-                                                            startIcon={<EditIcon />}
-                                                            onClick={() => handleOpenEditForm(user)}
-                                                            variant="outlined"
-                                                            sx={{
-                                                                color: '#FF9800',
-                                                                borderColor: '#FF9800',
-                                                                '&:hover': {
-                                                                    backgroundColor: '#FFF3E0',
-                                                                    borderColor: '#F57C00',
-                                                                },
-                                                            }}
-                                                        >
-                                                            Bearbeiten
-                                                        </Button>
-                                                    </Tooltip>
-                                                    <Tooltip title="Benutzer löschen">
-                                                        <Button
-                                                            size="small"
-                                                            startIcon={<DeleteIcon />}
-                                                            color="error"
-                                                            variant="outlined"
-                                                            onClick={() => handleOpenDeleteDialog(user.userUid)}
-                                                            sx={{
-                                                                '&:hover': {
-                                                                    backgroundColor: '#FFEBEE',
-                                                                },
-                                                            }}
-                                                        >
-                                                            Löschen
-                                                        </Button>
-                                                    </Tooltip>
-                                                </Box>
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })
-                            )}
-                        </TableBody>
-                    </Table>
-                    {/* Pagination für Frontend */}
-                    <TablePagination
-                        component="div"
-                        count={users.length}
-                        page={page}
-                        onPageChange={handleChangePage}
-                        rowsPerPage={rowsPerPage}
-                        onRowsPerPageChange={handleChangeRowsPerPage}
-                        rowsPerPageOptions={[25, 50, 100, 200]}
-                        labelRowsPerPage="Zeilen pro Seite:"
-                        labelDisplayedRows={({ from, to, count }) => `${from}-${to} von ${count}`}
-                        sx={{
-                            borderTop: '2px solid #E0E0E0',
-                            '.MuiTablePagination-toolbar': {
-                                paddingLeft: 2,
-                                paddingRight: 2,
-                            },
-                            '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
-                                fontWeight: 600,
-                                color: '#666',
-                            },
-                        }}
-                    />
-                </TableContainer>
+                                            <Button
+                                                size="small"
+                                                startIcon={<VisibilityIcon />}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleViewDetails(user.userUid);
+                                                }}
+                                                sx={{
+                                                    flex: 1,
+                                                    borderRadius: 2,
+                                                    textTransform: 'none',
+                                                    fontWeight: 600,
+                                                    color: '#4169E1',
+                                                    backgroundColor: 'rgba(65, 105, 225, 0.1)',
+                                                    '&:hover': {
+                                                        backgroundColor: 'rgba(65, 105, 225, 0.2)',
+                                                    },
+                                                }}
+                                            >
+                                                Details
+                                            </Button>
+                                            <Button
+                                                size="small"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleOpenEditForm(user);
+                                                }}
+                                                sx={{
+                                                    minWidth: 'auto',
+                                                    px: 1.5,
+                                                    borderRadius: 2,
+                                                    color: '#FF9800',
+                                                    backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                                                    '&:hover': {
+                                                        backgroundColor: 'rgba(255, 152, 0, 0.2)',
+                                                    },
+                                                }}
+                                            >
+                                                <EditIcon fontSize="small" />
+                                            </Button>
+                                            <Button
+                                                size="small"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleOpenDeleteDialog(user.userUid);
+                                                }}
+                                                sx={{
+                                                    minWidth: 'auto',
+                                                    px: 1.5,
+                                                    borderRadius: 2,
+                                                    color: '#F44336',
+                                                    backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                                                    '&:hover': {
+                                                        backgroundColor: 'rgba(244, 67, 54, 0.2)',
+                                                    },
+                                                }}
+                                            >
+                                                <DeleteIcon fontSize="small" />
+                                            </Button>
+                                        </Box>
+                                    </Card>
+                                );
+                            })
+                        )}
+                    </Box>
+
+                    {/* Pagination */}
+                    <Box sx={{
+                        mx: 2,
+                        mb: 2,
+                        p: 2,
+                        backgroundColor: 'white',
+                        borderRadius: 3,
+                        border: '1px solid rgba(0, 0, 0, 0.08)',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
+                    }}>
+                        <TablePagination
+                            component="div"
+                            count={users.length}
+                            page={page}
+                            onPageChange={handleChangePage}
+                            rowsPerPage={rowsPerPage}
+                            onRowsPerPageChange={handleChangeRowsPerPage}
+                            rowsPerPageOptions={[25, 50, 100, 200]}
+                            labelRowsPerPage="Einträge pro Seite:"
+                            labelDisplayedRows={({ from, to, count }) => `${from}-${to} von ${count}`}
+                            sx={{
+                                '.MuiTablePagination-toolbar': {
+                                    paddingLeft: 0,
+                                    paddingRight: 0,
+                                },
+                                '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
+                                    fontWeight: 600,
+                                    color: '#666',
+                                },
+                                '.MuiTablePagination-select': {
+                                    fontWeight: 600,
+                                },
+                            }}
+                        />
+                    </Box>
+                </>
             )}
 
             {/* Detail View Modal */}
