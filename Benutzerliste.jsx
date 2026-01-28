@@ -787,6 +787,9 @@ const Benutzerliste = () => {
                                                 cursor: 'pointer',
                                                 position: 'relative',
                                                 overflow: 'visible',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                height: '100%',
                                                 '&:hover': {
                                                     transform: 'translateY(-8px)',
                                                     boxShadow: '0 12px 24px rgba(65, 105, 225, 0.15)',
@@ -936,7 +939,7 @@ const Benutzerliste = () => {
                                                 sx={{
                                                     display: 'flex',
                                                     gap: 1,
-                                                    mt: 2,
+                                                    mt: 'auto',
                                                     pt: 2,
                                                     borderTop: '1px solid rgba(0, 0, 0, 0.08)',
                                                     transition: 'all 0.3s ease',
