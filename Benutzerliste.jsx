@@ -1257,11 +1257,11 @@ const Benutzerliste = () => {
             )}
 
             {/* Detail View Modal */}
-            <Dialog open={detailOpen} onClose={handleCloseDetail} maxWidth="sm" fullWidth>
-                <DialogTitle sx={{ background: 'linear-gradient(135deg, #4169E1 0%, #2E4CB8 100%)', color: '#FFFFFF', fontWeight: 700 }}>
+            <Dialog open={detailOpen} onClose={handleCloseDetail} maxWidth="md" fullWidth>
+                <DialogTitle sx={{ background: 'linear-gradient(135deg, #4169E1 0%, #2E4CB8 100%)', color: '#FFFFFF', fontWeight: 700, py: 2 }}>
                     Benutzerdetails
                 </DialogTitle>
-                <DialogContent sx={{ pt: 3 }}>
+                <DialogContent sx={{ pt: 3, pb: 3 }}>
                     {selectedUser && <BenutzerDetail user={selectedUser} />}
                 </DialogContent>
                 <DialogActions sx={{ borderTop: '1px solid #E0E0E0', p: 2 }}>
