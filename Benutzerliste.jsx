@@ -653,12 +653,18 @@ const Benutzerliste = () => {
                         <TextField
                             fullWidth
                             select
-                            label="Organisation"
                             value={organisationFilter}
                             onChange={handleOrganisationFilter}
                             variant="outlined"
                             SelectProps={{
                                 native: true,
+                            }}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <BusinessIcon sx={{ color: '#FF9800' }} />
+                                    </InputAdornment>
+                                ),
                             }}
                             sx={{
                                 '& .MuiOutlinedInput-root': {
@@ -686,12 +692,18 @@ const Benutzerliste = () => {
                         <TextField
                             fullWidth
                             select
-                            label="Rolle"
                             value={roleFilter}
                             onChange={handleRoleFilter}
                             variant="outlined"
                             SelectProps={{
                                 native: true,
+                            }}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <AccountCircleIcon sx={{ color: '#4169E1' }} />
+                                    </InputAdornment>
+                                ),
                             }}
                             sx={{
                                 '& .MuiOutlinedInput-root': {
