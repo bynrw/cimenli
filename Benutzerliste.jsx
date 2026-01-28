@@ -796,7 +796,7 @@ const Benutzerliste = () => {
                                             </Typography>
                                         </Box>
 
-                                        {/* Organisationen */}
+                                        {/* Organisationen & Rollen */}
                                         {activeOrgs.length > 0 && (
                                             <Box sx={{ mb: 2 }}>
                                                 <Typography variant="caption" sx={{
@@ -805,35 +805,71 @@ const Benutzerliste = () => {
                                                     textTransform: 'uppercase',
                                                     letterSpacing: 0.5,
                                                     display: 'block',
-                                                    mb: 1
+                                                    mb: 1.5
                                                 }}>
-                                                    Organisationen
+                                                    Organisationen & Rollen
                                                 </Typography>
-                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8 }}>
+                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                                                     {activeOrgs.slice(0, 2).map((org, idx) => (
-                                                        <Chip
+                                                        <Box
                                                             key={idx}
-                                                            label={org.orgName}
-                                                            size="small"
-                                                            icon={<BusinessIcon sx={{ fontSize: 14 }} />}
                                                             sx={{
-                                                                backgroundColor: '#FF9800',
-                                                                color: 'white',
-                                                                fontWeight: 600,
-                                                                fontSize: '0.75rem',
-                                                                '& .MuiChip-icon': { color: 'white' }
+                                                                p: 1.5,
+                                                                backgroundColor: 'rgba(255, 152, 0, 0.05)',
+                                                                borderRadius: 2,
+                                                                border: '1px solid rgba(255, 152, 0, 0.2)',
                                                             }}
-                                                        />
+                                                        >
+                                                            {/* Organisation Name */}
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                                                <BusinessIcon sx={{ fontSize: 16, color: '#FF9800' }} />
+                                                                <Typography variant="body2" sx={{
+                                                                    fontWeight: 700,
+                                                                    color: '#FF9800',
+                                                                    fontSize: '0.813rem'
+                                                                }}>
+                                                                    {org.orgName}
+                                                                </Typography>
+                                                            </Box>
+                                                            {/* Rollen */}
+                                                            {org.roles && org.roles.length > 0 ? (
+                                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8 }}>
+                                                                    {org.roles.map((role, roleIdx) => (
+                                                                        <Chip
+                                                                            key={roleIdx}
+                                                                            label={role.roleName}
+                                                                            size="small"
+                                                                            sx={{
+                                                                                backgroundColor: '#4169E1',
+                                                                                color: 'white',
+                                                                                fontWeight: 600,
+                                                                                fontSize: '0.688rem',
+                                                                                height: 20,
+                                                                            }}
+                                                                        />
+                                                                    ))}
+                                                                </Box>
+                                                            ) : (
+                                                                <Typography variant="caption" sx={{
+                                                                    color: '#999',
+                                                                    fontStyle: 'italic',
+                                                                    fontSize: '0.75rem'
+                                                                }}>
+                                                                    Keine Rollen zugewiesen
+                                                                </Typography>
+                                                            )}
+                                                        </Box>
                                                     ))}
                                                     {activeOrgs.length > 2 && (
                                                         <Chip
-                                                            label={`+${activeOrgs.length - 2}`}
+                                                            label={`+${activeOrgs.length - 2} weitere Organisation${activeOrgs.length - 2 > 1 ? 'en' : ''}`}
                                                             size="small"
                                                             sx={{
                                                                 backgroundColor: '#E0E0E0',
                                                                 color: '#666',
                                                                 fontWeight: 600,
                                                                 fontSize: '0.75rem',
+                                                                width: 'fit-content',
                                                             }}
                                                         />
                                                     )}
