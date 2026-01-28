@@ -34,9 +34,18 @@ import {
     Tooltip,
     Chip,
     Typography,
-    TablePagination
+    TablePagination,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemAvatar,
+    ListItemButton,
+    Avatar,
+    Divider,
+    ToggleButton,
+    ToggleButtonGroup
 } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon, Search as SearchIcon, Close as CloseIcon, Add as AddIcon, FilterList as FilterListIcon, Business as BusinessIcon, AccountCircle as AccountCircleIcon } from '@mui/icons-material';
+import { Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon, Search as SearchIcon, Close as CloseIcon, Add as AddIcon, FilterList as FilterListIcon, Business as BusinessIcon, AccountCircle as AccountCircleIcon, ViewModule as ViewModuleIcon, ViewList as ViewListIcon } from '@mui/icons-material';
 // import { useKeycloak } from '@react-keycloak/web';
 import userService, { setKeycloakInstance } from '../services/userService';  // Echter userService für Backend-API
 // import userService, { setKeycloakInstance } from '../services/mockUserService';  // Mock-Daten für lokale Tests ohne Backend
@@ -528,30 +537,65 @@ const Benutzerliste = () => {
                                 </Typography>
                             </Box>
                         </Box>
-                        <Button
-                            variant="contained"
-                            size="large"
-                            startIcon={<AddIcon />}
-                            onClick={handleOpenCreateForm}
-                            sx={{
-                                px: 4,
-                                py: 1.5,
-                                borderRadius: 3,
-                                background: 'linear-gradient(135deg, #4CAF50 0%, #45A049 100%)',
-                                fontSize: '1rem',
-                                fontWeight: 700,
-                                textTransform: 'none',
-                                boxShadow: '0 4px 14px rgba(76, 175, 80, 0.4)',
-                                '&:hover': {
-                                    background: 'linear-gradient(135deg, #45A049 0%, #388E3C 100%)',
-                                    transform: 'translateY(-2px)',
-                                    boxShadow: '0 6px 20px rgba(76, 175, 80, 0.5)',
-                                },
-                                transition: 'all 0.3s ease',
-                            }}
-                        >
-                            Neuer Benutzer
-                        </Button>
+                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                            <ToggleButtonGroup
+                                value={viewMode}
+                                exclusive
+                                onChange={(e, newMode) => newMode && setViewMode(newMode)}
+                                size="small"
+                                sx={{
+                                    backgroundColor: 'white',
+                                    '& .MuiToggleButton-root': {
+                                        px: 2,
+                                        py: 1,
+                                        border: '1px solid rgba(65, 105, 225, 0.2)',
+                                        '&.Mui-selected': {
+                                            backgroundColor: '#4169E1',
+                                            color: 'white',
+                                            '&:hover': {
+                                                backgroundColor: '#2E4CB8',
+                                            },
+                                        },
+                                        '&:hover': {
+                                            backgroundColor: 'rgba(65, 105, 225, 0.1)',
+                                        },
+                                    },
+                                }}
+                            >
+                                <ToggleButton value="cards" aria-label="card view">
+                                    <ViewModuleIcon sx={{ mr: 0.5 }} />
+                                    Cards
+                                </ToggleButton>
+                                <ToggleButton value="list" aria-label="list view">
+                                    <ViewListIcon sx={{ mr: 0.5 }} />
+                                    Liste
+                                </ToggleButton>
+                            </ToggleButtonGroup>
+                            <Button
+                                variant="contained"
+                                size="large"
+                                startIcon={<AddIcon />}
+                                onClick={handleOpenCreateForm}
+                                sx={{
+                                    px: 4,
+                                    py: 1.5,
+                                    borderRadius: 3,
+                                    background: 'linear-gradient(135deg, #4CAF50 0%, #45A049 100%)',
+                                    fontSize: '1rem',
+                                    fontWeight: 700,
+                                    textTransform: 'none',
+                                    boxShadow: '0 4px 14px rgba(76, 175, 80, 0.4)',
+                                    '&:hover': {
+                                        background: 'linear-gradient(135deg, #45A049 0%, #388E3C 100%)',
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: '0 6px 20px rgba(76, 175, 80, 0.5)',
+                                    },
+                                    transition: 'all 0.3s ease',
+                                }}
+                            >
+                                Neuer Benutzer
+                            </Button>
+                        </Box>
                     </Box>
 
                     {/* Filter-Felder */}
@@ -692,271 +736,463 @@ const Benutzerliste = () => {
                 </Box>
             ) : (
                 <>
-                    {/* Moderne Card-Ansicht */}
-                    <Box sx={{
-                        display: 'grid',
-                        gridTemplateColumns: {
-                            xs: '1fr',
-                            sm: 'repeat(2, 1fr)',
-                            lg: 'repeat(3, 1fr)',
-                            xl: 'repeat(4, 1fr)'
-                        },
-                        gap: 2.5,
-                        mx: 2,
-                        mb: 3,
-                        flex: 1,
-                        overflowY: 'auto'
-                    }}>
-                        {displayedUsers.length === 0 ? (
-                            <Box sx={{ gridColumn: '1 / -1', textAlign: 'center', py: 8 }}>
-                                <Typography variant="h6" sx={{ color: '#9E9E9E', fontWeight: 500 }}>
-                                    Keine Benutzer gefunden
-                                </Typography>
-                            </Box>
-                        ) : (
-                            displayedUsers.map((user) => {
-                                const activeOrgs = user.organisations?.filter(org => !org.deleted) || [];
-                                const initials = `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`;
+                    {viewMode === 'cards' ? (
+                        /* Moderne Card-Ansicht */
+                        <Box sx={{
+                            display: 'grid',
+                            gridTemplateColumns: {
+                                xs: '1fr',
+                                sm: 'repeat(2, 1fr)',
+                                lg: 'repeat(3, 1fr)',
+                                xl: 'repeat(4, 1fr)'
+                            },
+                            gap: 2.5,
+                            mx: 2,
+                            mb: 3,
+                            flex: 1,
+                            overflowY: 'auto'
+                        }}>
+                            {displayedUsers.length === 0 ? (
+                                <Box sx={{ gridColumn: '1 / -1', textAlign: 'center', py: 8 }}>
+                                    <Typography variant="h6" sx={{ color: '#9E9E9E', fontWeight: 500 }}>
+                                        Keine Benutzer gefunden
+                                    </Typography>
+                                </Box>
+                            ) : (
+                                displayedUsers.map((user) => {
+                                    const activeOrgs = user.organisations?.filter(org => !org.deleted) || [];
+                                    const initials = `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`;
 
-                                return (
-                                    <Card
-                                        key={user.userUid}
-                                        elevation={0}
-                                        sx={{
-                                            p: 3,
-                                            border: '1px solid rgba(0, 0, 0, 0.08)',
-                                            borderRadius: 3,
-                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                            cursor: 'pointer',
-                                            position: 'relative',
-                                            overflow: 'visible',
-                                            '&:hover': {
-                                                transform: 'translateY(-8px)',
-                                                boxShadow: '0 12px 24px rgba(65, 105, 225, 0.15)',
-                                                borderColor: 'rgba(65, 105, 225, 0.3)',
-                                                '& .action-buttons': {
-                                                    opacity: 1,
-                                                    transform: 'translateY(0)',
+                                    return (
+                                        <Card
+                                            key={user.userUid}
+                                            elevation={0}
+                                            sx={{
+                                                p: 3,
+                                                border: '1px solid rgba(0, 0, 0, 0.08)',
+                                                borderRadius: 3,
+                                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                cursor: 'pointer',
+                                                position: 'relative',
+                                                overflow: 'visible',
+                                                '&:hover': {
+                                                    transform: 'translateY(-8px)',
+                                                    boxShadow: '0 12px 24px rgba(65, 105, 225, 0.15)',
+                                                    borderColor: 'rgba(65, 105, 225, 0.3)',
+                                                    '& .action-buttons': {
+                                                        opacity: 1,
+                                                        transform: 'translateY(0)',
+                                                    },
                                                 },
-                                            },
-                                        }}
-                                        onClick={() => handleViewDetails(user.userUid)}
-                                    >
-                                        {/* Avatar & Name */}
-                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                            }}
+                                            onClick={() => handleViewDetails(user.userUid)}
+                                        >
+                                            {/* Avatar & Name */}
+                                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                                <Box sx={{
+                                                    width: 56,
+                                                    height: 56,
+                                                    borderRadius: '16px',
+                                                    background: 'linear-gradient(135deg, #4169E1 0%, #2E4CB8 100%)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    boxShadow: '0 4px 14px rgba(65, 105, 225, 0.3)',
+                                                    mr: 2,
+                                                }}>
+                                                    <Typography variant="h6" sx={{ color: 'white', fontWeight: 700 }}>
+                                                        {initials || '?'}
+                                                    </Typography>
+                                                </Box>
+                                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                    <Typography variant="h6" sx={{
+                                                        fontWeight: 700,
+                                                        color: '#2E4CB8',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        whiteSpace: 'nowrap'
+                                                    }}>
+                                                        {user.firstName} {user.lastName}
+                                                    </Typography>
+                                                    <Typography variant="body2" sx={{ color: '#666', fontSize: '0.875rem' }}>
+                                                        @{user.username || '-'}
+                                                    </Typography>
+                                                </Box>
+                                            </Box>
+
+                                            {/* Email */}
                                             <Box sx={{
-                                                width: 56,
-                                                height: 56,
-                                                borderRadius: '16px',
-                                                background: 'linear-gradient(135deg, #4169E1 0%, #2E4CB8 100%)',
                                                 display: 'flex',
                                                 alignItems: 'center',
-                                                justifyContent: 'center',
-                                                boxShadow: '0 4px 14px rgba(65, 105, 225, 0.3)',
-                                                mr: 2,
+                                                gap: 1,
+                                                mb: 2,
+                                                p: 1.5,
+                                                backgroundColor: 'rgba(65, 105, 225, 0.05)',
+                                                borderRadius: 2,
                                             }}>
-                                                <Typography variant="h6" sx={{ color: 'white', fontWeight: 700 }}>
-                                                    {initials || '?'}
-                                                </Typography>
-                                            </Box>
-                                            <Box sx={{ flex: 1, minWidth: 0 }}>
-                                                <Typography variant="h6" sx={{
-                                                    fontWeight: 700,
-                                                    color: '#2E4CB8',
+                                                <Typography variant="body2" sx={{
+                                                    color: '#4169E1',
+                                                    fontWeight: 500,
                                                     overflow: 'hidden',
                                                     textOverflow: 'ellipsis',
                                                     whiteSpace: 'nowrap'
                                                 }}>
-                                                    {user.firstName} {user.lastName}
-                                                </Typography>
-                                                <Typography variant="body2" sx={{ color: '#666', fontSize: '0.875rem' }}>
-                                                    @{user.username || '-'}
+                                                    {user.mail || 'Keine E-Mail'}
                                                 </Typography>
                                             </Box>
-                                        </Box>
 
-                                        {/* Email */}
-                                        <Box sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 1,
-                                            mb: 2,
-                                            p: 1.5,
-                                            backgroundColor: 'rgba(65, 105, 225, 0.05)',
-                                            borderRadius: 2,
-                                        }}>
-                                            <Typography variant="body2" sx={{
-                                                color: '#4169E1',
-                                                fontWeight: 500,
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap'
-                                            }}>
-                                                {user.mail || 'Keine E-Mail'}
-                                            </Typography>
-                                        </Box>
-
-                                        {/* Organisationen & Rollen */}
-                                        {activeOrgs.length > 0 && (
-                                            <Box sx={{ mb: 2 }}>
-                                                <Typography variant="caption" sx={{
-                                                    color: '#666',
-                                                    fontWeight: 600,
-                                                    textTransform: 'uppercase',
-                                                    letterSpacing: 0.5,
-                                                    display: 'block',
-                                                    mb: 1.5
-                                                }}>
-                                                    Organisationen & Rollen
-                                                </Typography>
-                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                                                    {activeOrgs.slice(0, 2).map((org, idx) => (
-                                                        <Box
-                                                            key={idx}
-                                                            sx={{
-                                                                p: 1.5,
-                                                                backgroundColor: 'rgba(255, 152, 0, 0.05)',
-                                                                borderRadius: 2,
-                                                                border: '1px solid rgba(255, 152, 0, 0.2)',
-                                                            }}
-                                                        >
-                                                            {/* Organisation Name */}
-                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                                                <BusinessIcon sx={{ fontSize: 16, color: '#FF9800' }} />
-                                                                <Typography variant="body2" sx={{
-                                                                    fontWeight: 700,
-                                                                    color: '#FF9800',
-                                                                    fontSize: '0.813rem'
-                                                                }}>
-                                                                    {org.orgName}
-                                                                </Typography>
-                                                            </Box>
-                                                            {/* Rollen */}
-                                                            {org.roles && org.roles.length > 0 ? (
-                                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8 }}>
-                                                                    {org.roles.map((role, roleIdx) => (
-                                                                        <Chip
-                                                                            key={roleIdx}
-                                                                            label={role.roleName}
-                                                                            size="small"
-                                                                            sx={{
-                                                                                backgroundColor: '#4169E1',
-                                                                                color: 'white',
-                                                                                fontWeight: 600,
-                                                                                fontSize: '0.688rem',
-                                                                                height: 20,
-                                                                            }}
-                                                                        />
-                                                                    ))}
+                                            {/* Organisationen & Rollen */}
+                                            {activeOrgs.length > 0 && (
+                                                <Box sx={{ mb: 2 }}>
+                                                    <Typography variant="caption" sx={{
+                                                        color: '#666',
+                                                        fontWeight: 600,
+                                                        textTransform: 'uppercase',
+                                                        letterSpacing: 0.5,
+                                                        display: 'block',
+                                                        mb: 1.5
+                                                    }}>
+                                                        Organisationen & Rollen
+                                                    </Typography>
+                                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                                        {activeOrgs.slice(0, 2).map((org, idx) => (
+                                                            <Box
+                                                                key={idx}
+                                                                sx={{
+                                                                    p: 1.5,
+                                                                    backgroundColor: 'rgba(255, 152, 0, 0.05)',
+                                                                    borderRadius: 2,
+                                                                    border: '1px solid rgba(255, 152, 0, 0.2)',
+                                                                }}
+                                                            >
+                                                                {/* Organisation Name */}
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                                                    <BusinessIcon sx={{ fontSize: 16, color: '#FF9800' }} />
+                                                                    <Typography variant="body2" sx={{
+                                                                        fontWeight: 700,
+                                                                        color: '#FF9800',
+                                                                        fontSize: '0.813rem'
+                                                                    }}>
+                                                                        {org.orgName}
+                                                                    </Typography>
                                                                 </Box>
-                                                            ) : (
-                                                                <Typography variant="caption" sx={{
-                                                                    color: '#999',
-                                                                    fontStyle: 'italic',
-                                                                    fontSize: '0.75rem'
-                                                                }}>
-                                                                    Keine Rollen zugewiesen
-                                                                </Typography>
-                                                            )}
-                                                        </Box>
-                                                    ))}
-                                                    {activeOrgs.length > 2 && (
-                                                        <Chip
-                                                            label={`+${activeOrgs.length - 2} weitere Organisation${activeOrgs.length - 2 > 1 ? 'en' : ''}`}
-                                                            size="small"
-                                                            sx={{
-                                                                backgroundColor: '#E0E0E0',
-                                                                color: '#666',
-                                                                fontWeight: 600,
-                                                                fontSize: '0.75rem',
-                                                                width: 'fit-content',
-                                                            }}
-                                                        />
-                                                    )}
+                                                                {/* Rollen */}
+                                                                {org.roles && org.roles.length > 0 ? (
+                                                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8 }}>
+                                                                        {org.roles.map((role, roleIdx) => (
+                                                                            <Chip
+                                                                                key={roleIdx}
+                                                                                label={role.roleName}
+                                                                                size="small"
+                                                                                sx={{
+                                                                                    backgroundColor: '#4169E1',
+                                                                                    color: 'white',
+                                                                                    fontWeight: 600,
+                                                                                    fontSize: '0.688rem',
+                                                                                    height: 20,
+                                                                                }}
+                                                                            />
+                                                                        ))}
+                                                                    </Box>
+                                                                ) : (
+                                                                    <Typography variant="caption" sx={{
+                                                                        color: '#999',
+                                                                        fontStyle: 'italic',
+                                                                        fontSize: '0.75rem'
+                                                                    }}>
+                                                                        Keine Rollen zugewiesen
+                                                                    </Typography>
+                                                                )}
+                                                            </Box>
+                                                        ))}
+                                                        {activeOrgs.length > 2 && (
+                                                            <Chip
+                                                                label={`+${activeOrgs.length - 2} weitere Organisation${activeOrgs.length - 2 > 1 ? 'en' : ''}`}
+                                                                size="small"
+                                                                sx={{
+                                                                    backgroundColor: '#E0E0E0',
+                                                                    color: '#666',
+                                                                    fontWeight: 600,
+                                                                    fontSize: '0.75rem',
+                                                                    width: 'fit-content',
+                                                                }}
+                                                            />
+                                                        )}
+                                                    </Box>
                                                 </Box>
-                                            </Box>
-                                        )}
+                                            )}
 
-                                        {/* Action Buttons */}
-                                        <Box
-                                            className="action-buttons"
-                                            sx={{
-                                                display: 'flex',
-                                                gap: 1,
-                                                mt: 2,
-                                                pt: 2,
-                                                borderTop: '1px solid rgba(0, 0, 0, 0.08)',
-                                                opacity: 0,
-                                                transform: 'translateY(-10px)',
-                                                transition: 'all 0.3s ease',
-                                            }}
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            <Button
-                                                size="small"
-                                                startIcon={<VisibilityIcon />}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleViewDetails(user.userUid);
-                                                }}
+                                            {/* Action Buttons */}
+                                            <Box
+                                                className="action-buttons"
                                                 sx={{
-                                                    flex: 1,
-                                                    borderRadius: 2,
-                                                    textTransform: 'none',
-                                                    fontWeight: 600,
-                                                    color: '#4169E1',
-                                                    backgroundColor: 'rgba(65, 105, 225, 0.1)',
-                                                    '&:hover': {
-                                                        backgroundColor: 'rgba(65, 105, 225, 0.2)',
-                                                    },
+                                                    display: 'flex',
+                                                    gap: 1,
+                                                    mt: 2,
+                                                    pt: 2,
+                                                    borderTop: '1px solid rgba(0, 0, 0, 0.08)',
+                                                    opacity: 0,
+                                                    transform: 'translateY(-10px)',
+                                                    transition: 'all 0.3s ease',
                                                 }}
+                                                onClick={(e) => e.stopPropagation()}
                                             >
-                                                Details
-                                            </Button>
-                                            <Button
-                                                size="small"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleOpenEditForm(user);
-                                                }}
-                                                sx={{
-                                                    minWidth: 'auto',
-                                                    px: 1.5,
-                                                    borderRadius: 2,
-                                                    color: '#FF9800',
-                                                    backgroundColor: 'rgba(255, 152, 0, 0.1)',
-                                                    '&:hover': {
-                                                        backgroundColor: 'rgba(255, 152, 0, 0.2)',
-                                                    },
-                                                }}
-                                            >
-                                                <EditIcon fontSize="small" />
-                                            </Button>
-                                            <Button
-                                                size="small"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleOpenDeleteDialog(user.userUid);
-                                                }}
-                                                sx={{
-                                                    minWidth: 'auto',
-                                                    px: 1.5,
-                                                    borderRadius: 2,
-                                                    color: '#F44336',
-                                                    backgroundColor: 'rgba(244, 67, 54, 0.1)',
-                                                    '&:hover': {
-                                                        backgroundColor: 'rgba(244, 67, 54, 0.2)',
-                                                    },
-                                                }}
-                                            >
-                                                <DeleteIcon fontSize="small" />
-                                            </Button>
-                                        </Box>
-                                    </Card>
-                                );
-                            })
-                        )}
-                    </Box>
+                                                <Button
+                                                    size="small"
+                                                    startIcon={<VisibilityIcon />}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleViewDetails(user.userUid);
+                                                    }}
+                                                    sx={{
+                                                        flex: 1,
+                                                        borderRadius: 2,
+                                                        textTransform: 'none',
+                                                        fontWeight: 600,
+                                                        color: '#4169E1',
+                                                        backgroundColor: 'rgba(65, 105, 225, 0.1)',
+                                                        '&:hover': {
+                                                            backgroundColor: 'rgba(65, 105, 225, 0.2)',
+                                                        },
+                                                    }}
+                                                >
+                                                    Details
+                                                </Button>
+                                                <Button
+                                                    size="small"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleOpenEditForm(user);
+                                                    }}
+                                                    sx={{
+                                                        minWidth: 'auto',
+                                                        px: 1.5,
+                                                        borderRadius: 2,
+                                                        color: '#FF9800',
+                                                        backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                                                        '&:hover': {
+                                                            backgroundColor: 'rgba(255, 152, 0, 0.2)',
+                                                        },
+                                                    }}
+                                                >
+                                                    <EditIcon fontSize="small" />
+                                                </Button>
+                                                <Button
+                                                    size="small"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleOpenDeleteDialog(user.userUid);
+                                                    }}
+                                                    sx={{
+                                                        minWidth: 'auto',
+                                                        px: 1.5,
+                                                        borderRadius: 2,
+                                                        color: '#F44336',
+                                                        backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                                                        '&:hover': {
+                                                            backgroundColor: 'rgba(244, 67, 54, 0.2)',
+                                                        },
+                                                    }}
+                                                >
+                                                    <DeleteIcon fontSize="small" />
+                                                </Button>
+                                            </Box>
+                                        </Card>
+                                    );
+                                })
+                            )}
+                        </Box>
+                    ) : (
+                        /* Kompakte List-Ansicht */
+                        <Box sx={{ mx: 2, mb: 3, flex: 1, overflowY: 'auto' }}>
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    border: '1px solid rgba(0, 0, 0, 0.08)',
+                                    borderRadius: 3,
+                                    overflow: 'hidden',
+                                }}
+                            >
+                                {displayedUsers.length === 0 ? (
+                                    <Box sx={{ textAlign: 'center', py: 8 }}>
+                                        <Typography variant="h6" sx={{ color: '#9E9E9E', fontWeight: 500 }}>
+                                            Keine Benutzer gefunden
+                                        </Typography>
+                                    </Box>
+                                ) : (
+                                    <List sx={{ py: 0 }}>
+                                        {displayedUsers.map((user, index) => {
+                                            const activeOrgs = user.organisations?.filter(org => !org.deleted) || [];
+                                            const initials = `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`;
+
+                                            return (
+                                                <React.Fragment key={user.userUid}>
+                                                    <ListItem
+                                                        sx={{
+                                                            py: 2,
+                                                            px: 3,
+                                                            transition: 'all 0.2s ease',
+                                                            '&:hover': {
+                                                                backgroundColor: 'rgba(65, 105, 225, 0.05)',
+                                                                '& .list-actions': {
+                                                                    opacity: 1,
+                                                                },
+                                                            },
+                                                        }}
+                                                        secondaryAction={
+                                                            <Box
+                                                                className="list-actions"
+                                                                sx={{
+                                                                    display: 'flex',
+                                                                    gap: 1,
+                                                                    opacity: { xs: 1, md: 0 },
+                                                                    transition: 'opacity 0.2s ease',
+                                                                }}
+                                                            >
+                                                                <Tooltip title="Details">
+                                                                    <Button
+                                                                        size="small"
+                                                                        onClick={() => handleViewDetails(user.userUid)}
+                                                                        sx={{
+                                                                            minWidth: 'auto',
+                                                                            px: 1.5,
+                                                                            borderRadius: 2,
+                                                                            color: '#4169E1',
+                                                                            backgroundColor: 'rgba(65, 105, 225, 0.1)',
+                                                                            '&:hover': {
+                                                                                backgroundColor: 'rgba(65, 105, 225, 0.2)',
+                                                                            },
+                                                                        }}
+                                                                    >
+                                                                        <VisibilityIcon fontSize="small" />
+                                                                    </Button>
+                                                                </Tooltip>
+                                                                <Tooltip title="Bearbeiten">
+                                                                    <Button
+                                                                        size="small"
+                                                                        onClick={() => handleOpenEditForm(user)}
+                                                                        sx={{
+                                                                            minWidth: 'auto',
+                                                                            px: 1.5,
+                                                                            borderRadius: 2,
+                                                                            color: '#FF9800',
+                                                                            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                                                                            '&:hover': {
+                                                                                backgroundColor: 'rgba(255, 152, 0, 0.2)',
+                                                                            },
+                                                                        }}
+                                                                    >
+                                                                        <EditIcon fontSize="small" />
+                                                                    </Button>
+                                                                </Tooltip>
+                                                                <Tooltip title="Löschen">
+                                                                    <Button
+                                                                        size="small"
+                                                                        onClick={() => handleOpenDeleteDialog(user.userUid)}
+                                                                        sx={{
+                                                                            minWidth: 'auto',
+                                                                            px: 1.5,
+                                                                            borderRadius: 2,
+                                                                            color: '#F44336',
+                                                                            backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                                                                            '&:hover': {
+                                                                                backgroundColor: 'rgba(244, 67, 54, 0.2)',
+                                                                            },
+                                                                        }}
+                                                                    >
+                                                                        <DeleteIcon fontSize="small" />
+                                                                    </Button>
+                                                                </Tooltip>
+                                                            </Box>
+                                                        }
+                                                    >
+                                                        <ListItemAvatar>
+                                                            <Avatar
+                                                                sx={{
+                                                                    width: 48,
+                                                                    height: 48,
+                                                                    background: 'linear-gradient(135deg, #4169E1 0%, #2E4CB8 100%)',
+                                                                    fontWeight: 700,
+                                                                    fontSize: '1rem',
+                                                                }}
+                                                            >
+                                                                {initials || '?'}
+                                                            </Avatar>
+                                                        </ListItemAvatar>
+                                                        <ListItemText
+                                                            primary={
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                                                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#2E4CB8' }}>
+                                                                        {user.firstName} {user.lastName}
+                                                                    </Typography>
+                                                                    <Typography variant="body2" sx={{ color: '#666' }}>
+                                                                        @{user.username || '-'}
+                                                                    </Typography>
+                                                                </Box>
+                                                            }
+                                                            secondary={
+                                                                <Box sx={{ mt: 0.5 }}>
+                                                                    <Typography variant="body2" sx={{ color: '#4169E1', mb: 1 }}>
+                                                                        {user.mail || 'Keine E-Mail'}
+                                                                    </Typography>
+                                                                    {activeOrgs.length > 0 && (
+                                                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
+                                                                            {activeOrgs.slice(0, 3).map((org, idx) => (
+                                                                                <Tooltip
+                                                                                    key={idx}
+                                                                                    title={
+                                                                                        org.roles && org.roles.length > 0
+                                                                                            ? `Rollen: ${org.roles.map(r => r.roleName).join(', ')}`
+                                                                                            : 'Keine Rollen'
+                                                                                    }
+                                                                                >
+                                                                                    <Chip
+                                                                                        icon={<BusinessIcon />}
+                                                                                        label={org.orgName}
+                                                                                        size="small"
+                                                                                        sx={{
+                                                                                            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                                                                                            color: '#FF9800',
+                                                                                            fontWeight: 600,
+                                                                                            fontSize: '0.75rem',
+                                                                                            height: 24,
+                                                                                            '& .MuiChip-icon': {
+                                                                                                color: '#FF9800',
+                                                                                                fontSize: 16,
+                                                                                            },
+                                                                                        }}
+                                                                                    />
+                                                                                </Tooltip>
+                                                                            ))}
+                                                                            {activeOrgs.length > 3 && (
+                                                                                <Chip
+                                                                                    label={`+${activeOrgs.length - 3}`}
+                                                                                    size="small"
+                                                                                    sx={{
+                                                                                        backgroundColor: '#E0E0E0',
+                                                                                        color: '#666',
+                                                                                        fontWeight: 600,
+                                                                                        fontSize: '0.75rem',
+                                                                                        height: 24,
+                                                                                    }}
+                                                                                />
+                                                                            )}
+                                                                        </Box>
+                                                                    )}
+                                                                </Box>
+                                                            }
+                                                            sx={{ pr: { xs: 12, md: 20 } }}
+                                                        />
+                                                    </ListItem>
+                                                    {index < displayedUsers.length - 1 && <Divider />}
+                                                </React.Fragment>
+                                            );
+                                        })}
+                                    </List>
+                                )}
+                            </Paper>
+                        </Box>
+                    )}
 
                     {/* Pagination */}
                     <Box sx={{
