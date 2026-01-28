@@ -1003,9 +1003,10 @@ const Benutzerliste = () => {
                             )}
                         </Box>
                     ) : (
-                        /* Kompakte List-Ansicht */
+                        /* Moderne Tabellen-Ansicht */
                         <Box sx={{ mx: 2, mb: 3, flex: 1, overflowY: 'auto' }}>
-                            <Paper
+                            <TableContainer
+                                component={Paper}
                                 elevation={0}
                                 sx={{
                                     border: '1px solid rgba(0, 0, 0, 0.08)',
@@ -1013,38 +1014,151 @@ const Benutzerliste = () => {
                                     overflow: 'hidden',
                                 }}
                             >
-                                {displayedUsers.length === 0 ? (
-                                    <Box sx={{ textAlign: 'center', py: 8 }}>
-                                        <Typography variant="h6" sx={{ color: '#9E9E9E', fontWeight: 500 }}>
-                                            Keine Benutzer gefunden
-                                        </Typography>
-                                    </Box>
-                                ) : (
-                                    <List sx={{ py: 0 }}>
-                                        {displayedUsers.map((user, index) => {
-                                            const activeOrgs = user.organisations?.filter(org => !org.deleted) || [];
-                                            const initials = `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`;
+                                <Table sx={{ minWidth: 800 }}>
+                                    <TableHead>
+                                        <TableRow sx={{ backgroundColor: 'rgba(65, 105, 225, 0.05)' }}>
+                                            <TableCell sx={{ fontWeight: 700, color: '#2E4CB8', fontSize: '0.875rem' }}>
+                                                Benutzer
+                                            </TableCell>
+                                            <TableCell sx={{ fontWeight: 700, color: '#2E4CB8', fontSize: '0.875rem' }}>
+                                                Benutzername
+                                            </TableCell>
+                                            <TableCell sx={{ fontWeight: 700, color: '#2E4CB8', fontSize: '0.875rem' }}>
+                                                E-Mail
+                                            </TableCell>
+                                            <TableCell sx={{ fontWeight: 700, color: '#2E4CB8', fontSize: '0.875rem' }}>
+                                                Organisationen & Rollen
+                                            </TableCell>
+                                            <TableCell align="right" sx={{ fontWeight: 700, color: '#2E4CB8', fontSize: '0.875rem' }}>
+                                                Aktionen
+                                            </TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {displayedUsers.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
+                                                    <Typography variant="h6" sx={{ color: '#9E9E9E', fontWeight: 500 }}>
+                                                        Keine Benutzer gefunden
+                                                    </Typography>
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            displayedUsers.map((user) => {
+                                                const activeOrgs = user.organisations?.filter(org => !org.deleted) || [];
+                                                const initials = `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`;
 
-                                            return (
-                                                <React.Fragment key={user.userUid}>
-                                                    <ListItem
+                                                return (
+                                                    <TableRow
+                                                        key={user.userUid}
                                                         sx={{
-                                                            py: 2,
-                                                            px: 3,
                                                             transition: 'all 0.2s ease',
                                                             '&:hover': {
                                                                 backgroundColor: 'rgba(65, 105, 225, 0.05)',
-                                                                '& .list-actions': {
+                                                                '& .table-actions': {
                                                                     opacity: 1,
                                                                 },
                                                             },
                                                         }}
-                                                        secondaryAction={
+                                                    >
+                                                        {/* Benutzer (Avatar + Name) */}
+                                                        <TableCell>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                                                <Avatar
+                                                                    sx={{
+                                                                        width: 40,
+                                                                        height: 40,
+                                                                        background: 'linear-gradient(135deg, #4169E1 0%, #2E4CB8 100%)',
+                                                                        fontWeight: 700,
+                                                                        fontSize: '0.875rem',
+                                                                    }}
+                                                                >
+                                                                    {initials || '?'}
+                                                                </Avatar>
+                                                                <Box>
+                                                                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#2E4CB8', lineHeight: 1.3 }}>
+                                                                        {user.firstName} {user.lastName}
+                                                                    </Typography>
+                                                                </Box>
+                                                            </Box>
+                                                        </TableCell>
+
+                                                        {/* Benutzername */}
+                                                        <TableCell>
+                                                            <Typography variant="body2" sx={{ color: '#666', fontWeight: 500 }}>
+                                                                @{user.username || '-'}
+                                                            </Typography>
+                                                        </TableCell>
+
+                                                        {/* E-Mail */}
+                                                        <TableCell>
+                                                            <Typography variant="body2" sx={{ color: '#4169E1', fontWeight: 500 }}>
+                                                                {user.mail || 'Keine E-Mail'}
+                                                            </Typography>
+                                                        </TableCell>
+
+                                                        {/* Organisationen & Rollen */}
+                                                        <TableCell>
+                                                            {activeOrgs.length > 0 ? (
+                                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                                                    {activeOrgs.slice(0, 2).map((org, idx) => (
+                                                                        <Box key={idx} sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                                                <BusinessIcon sx={{ fontSize: 14, color: '#FF9800' }} />
+                                                                                <Typography variant="caption" sx={{ fontWeight: 700, color: '#FF9800', fontSize: '0.75rem' }}>
+                                                                                    {org.orgName}
+                                                                                </Typography>
+                                                                            </Box>
+                                                                            {org.roles && org.roles.length > 0 && (
+                                                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, ml: 2.5 }}>
+                                                                                    {org.roles.map((role, roleIdx) => (
+                                                                                        <Chip
+                                                                                            key={roleIdx}
+                                                                                            label={role.roleName}
+                                                                                            size="small"
+                                                                                            sx={{
+                                                                                                backgroundColor: '#4169E1',
+                                                                                                color: 'white',
+                                                                                                fontWeight: 600,
+                                                                                                fontSize: '0.688rem',
+                                                                                                height: 20,
+                                                                                            }}
+                                                                                        />
+                                                                                    ))}
+                                                                                </Box>
+                                                                            )}
+                                                                        </Box>
+                                                                    ))}
+                                                                    {activeOrgs.length > 2 && (
+                                                                        <Chip
+                                                                            label={`+${activeOrgs.length - 2} weitere`}
+                                                                            size="small"
+                                                                            sx={{
+                                                                                backgroundColor: '#E0E0E0',
+                                                                                color: '#666',
+                                                                                fontWeight: 600,
+                                                                                fontSize: '0.688rem',
+                                                                                height: 20,
+                                                                                width: 'fit-content',
+                                                                            }}
+                                                                        />
+                                                                    )}
+                                                                </Box>
+                                                            ) : (
+                                                                <Typography variant="caption" sx={{ color: '#999', fontStyle: 'italic' }}>
+                                                                    Keine Organisationen
+                                                                </Typography>
+                                                            )}
+                                                        </TableCell>
+
+                                                        {/* Aktionen */}
+                                                        <TableCell align="right">
                                                             <Box
-                                                                className="list-actions"
+                                                                className="table-actions"
                                                                 sx={{
                                                                     display: 'flex',
                                                                     gap: 1,
+                                                                    justifyContent: 'flex-end',
                                                                     opacity: { xs: 1, md: 0 },
                                                                     transition: 'opacity 0.2s ease',
                                                                 }}
@@ -1104,93 +1218,14 @@ const Benutzerliste = () => {
                                                                     </Button>
                                                                 </Tooltip>
                                                             </Box>
-                                                        }
-                                                    >
-                                                        <ListItemAvatar>
-                                                            <Avatar
-                                                                sx={{
-                                                                    width: 48,
-                                                                    height: 48,
-                                                                    background: 'linear-gradient(135deg, #4169E1 0%, #2E4CB8 100%)',
-                                                                    fontWeight: 700,
-                                                                    fontSize: '1rem',
-                                                                }}
-                                                            >
-                                                                {initials || '?'}
-                                                            </Avatar>
-                                                        </ListItemAvatar>
-                                                        <ListItemText
-                                                            primary={
-                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                                                                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#2E4CB8' }}>
-                                                                        {user.firstName} {user.lastName}
-                                                                    </Typography>
-                                                                    <Typography variant="body2" sx={{ color: '#666' }}>
-                                                                        @{user.username || '-'}
-                                                                    </Typography>
-                                                                </Box>
-                                                            }
-                                                            secondary={
-                                                                <Box sx={{ mt: 0.5 }}>
-                                                                    <Typography variant="body2" sx={{ color: '#4169E1', mb: 1 }}>
-                                                                        {user.mail || 'Keine E-Mail'}
-                                                                    </Typography>
-                                                                    {activeOrgs.length > 0 && (
-                                                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
-                                                                            {activeOrgs.slice(0, 3).map((org, idx) => (
-                                                                                <Tooltip
-                                                                                    key={idx}
-                                                                                    title={
-                                                                                        org.roles && org.roles.length > 0
-                                                                                            ? `Rollen: ${org.roles.map(r => r.roleName).join(', ')}`
-                                                                                            : 'Keine Rollen'
-                                                                                    }
-                                                                                >
-                                                                                    <Chip
-                                                                                        icon={<BusinessIcon />}
-                                                                                        label={org.orgName}
-                                                                                        size="small"
-                                                                                        sx={{
-                                                                                            backgroundColor: 'rgba(255, 152, 0, 0.1)',
-                                                                                            color: '#FF9800',
-                                                                                            fontWeight: 600,
-                                                                                            fontSize: '0.75rem',
-                                                                                            height: 24,
-                                                                                            '& .MuiChip-icon': {
-                                                                                                color: '#FF9800',
-                                                                                                fontSize: 16,
-                                                                                            },
-                                                                                        }}
-                                                                                    />
-                                                                                </Tooltip>
-                                                                            ))}
-                                                                            {activeOrgs.length > 3 && (
-                                                                                <Chip
-                                                                                    label={`+${activeOrgs.length - 3}`}
-                                                                                    size="small"
-                                                                                    sx={{
-                                                                                        backgroundColor: '#E0E0E0',
-                                                                                        color: '#666',
-                                                                                        fontWeight: 600,
-                                                                                        fontSize: '0.75rem',
-                                                                                        height: 24,
-                                                                                    }}
-                                                                                />
-                                                                            )}
-                                                                        </Box>
-                                                                    )}
-                                                                </Box>
-                                                            }
-                                                            sx={{ pr: { xs: 12, md: 20 } }}
-                                                        />
-                                                    </ListItem>
-                                                    {index < displayedUsers.length - 1 && <Divider />}
-                                                </React.Fragment>
-                                            );
-                                        })}
-                                    </List>
-                                )}
-                            </Paper>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
                         </Box>
                     )}
 
