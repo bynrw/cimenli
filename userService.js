@@ -93,37 +93,34 @@ const userService = {
      */
     getUsers: async (searchParams = {}) => {
         try {
-            // Request Body für POST-Request vorbereiten
-            const requestBody = {
-                userSearchRequest: {},
-                organisationSearchRequest: {}
-            };
+            // Query-Parameter als flache Struktur vorbereiten
+            const params = {};
 
             // Suchbegriff für Username/Nachname
             if (searchParams.searchUsernameOrLastname) {
-                requestBody.userSearchRequest.searchUsernameOrLastname = searchParams.searchUsernameOrLastname;
-                requestBody.userSearchRequest.searchMode = 'SUBSTRING';
+                params.searchUsernameOrLastname = searchParams.searchUsernameOrLastname;
+                params.searchMode = 'SUBSTRING';
             }
 
             // Organisation UID
             if (searchParams.orgUid) {
-                requestBody.organisationSearchRequest.orgUid = searchParams.orgUid;
+                params.orgUid = searchParams.orgUid;
             }
 
             // Level Type ID
             if (searchParams.levelTypeId) {
-                requestBody.organisationSearchRequest.levelTypeId = searchParams.levelTypeId;
+                params.levelTypeId = searchParams.levelTypeId;
             }
 
             // Level ID
             if (searchParams.levelId) {
-                requestBody.organisationSearchRequest.levelId = searchParams.levelId;
+                params.levelId = searchParams.levelId;
             }
 
-            console.log('Sending POST request to /api/users with body:', requestBody);
+            console.log('Sending GET request to /api/users with params:', params);
 
-            // POST-Request an /api/users mit Request Body (nicht GET!)
-            const response = await axiosInstance.post('/users', requestBody);
+            // GET-Request an /api/users mit Query-Parametern
+            const response = await axiosInstance.get('/users', { params });
 
             console.log('Received response:', response.data);
             return response.data;  // Gibt die Benutzerliste zurück
