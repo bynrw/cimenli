@@ -11,7 +11,7 @@
  * - Keycloak-Integration für Authentifizierung
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Table,
     TableBody,
@@ -33,7 +33,8 @@ import {
     InputAdornment,
     Tooltip,
     Chip,
-    Typography
+    Typography,
+    TablePagination
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon, Search as SearchIcon, Close as CloseIcon, Add as AddIcon } from '@mui/icons-material';
 // import { useKeycloak } from '@react-keycloak/web';
@@ -105,6 +106,13 @@ const Benutzerliste = () => {
     // Benutzer für Bearbeitung (null = neuer Benutzer erstellen)
     const [editingUser, setEditingUser] = useState(null);
 
+    // Pagination-State
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(50);
+
+    // Debouncing-Timer für Suche
+    const searchTimerRef = useRef(null);
+
     /**
      * useEffect: Wird beim ersten Laden der Komponente ausgeführt
      * - Lädt alle Benutzer vom Backend
@@ -115,6 +123,13 @@ const Benutzerliste = () => {
         fetchUsers();              // Benutzer vom Backend laden
         fetchOrganisations();      // Organisationen vom Backend laden
         fetchRoles();              // Alle verfügbaren Rollen laden
+
+        // Cleanup: Timer beim Unmount abbrechen
+        return () => {
+            if (searchTimerRef.current) {
+                clearTimeout(searchTimerRef.current);
+            }
+        };
     }, []); // Leeres Array [] bedeutet: nur einmal beim Komponentenstart ausführen
 
     // ========== API-KOMMUNIKATION ==========
@@ -242,23 +257,28 @@ const Benutzerliste = () => {
     // ========== SUCH- UND FILTER-FUNKTIONEN ==========
 
     /**
-     * Handler für Name/Email/Benutzername-Suche
+     * Handler für Name/Email/Benutzername-Suche mit Debouncing
      * @param {Event} e - Input-Change-Event
      * 
-     * Wird bei jeder Eingabe im Suchfeld aufgerufen und löst Backend-Filterung aus
+     * Wartet 500ms nach letzter Eingabe bevor Backend abgefragt wird
+     * Verhindert zu viele API-Calls bei 10.000+ Benutzern
      */
     const handleNameSearch = (e) => {
         const value = e.target.value;
         setSearchTerm(value);
+        setPage(0); // Zurück zur ersten Seite bei neuer Suche
 
-        // Organisation-Name in UUID umwandeln
-        const orgUid = organisationFilter ? orgNameToUidMap[organisationFilter] : '';
+        // Vorherigen Timer abbrechen
+        if (searchTimerRef.current) {
+            clearTimeout(searchTimerRef.current);
+        }
 
-        // Rollen-Name in ID umwandeln
-        const roleId = roleFilter ? roleNameToIdMap[roleFilter] : '';
-
-        // Server-Side-Filtering: Backend neu abfragen
-        fetchUsers(value, orgUid, roleId);
+        // Neuen Timer starten (500ms Verzögerung)
+        searchTimerRef.current = setTimeout(() => {
+            const orgUid = organisationFilter ? orgNameToUidMap[organisationFilter] : '';
+            const roleId = roleFilter ? roleNameToIdMap[roleFilter] : '';
+            fetchUsers(value, orgUid, roleId);
+        }, 500);
     };
 
     /**
@@ -270,6 +290,7 @@ const Benutzerliste = () => {
     const handleOrganisationFilter = (e) => {
         const orgName = e.target.value;
         setOrganisationFilter(orgName);
+        setPage(0); // Zurück zur ersten Seite
 
         // Organisation-Name in UUID umwandeln
         const orgUid = orgName ? orgNameToUidMap[orgName] : '';
@@ -292,6 +313,7 @@ const Benutzerliste = () => {
     const handleRoleFilter = (e) => {
         const roleName = e.target.value;
         setRoleFilter(roleName);
+        setPage(0); // Zurück zur ersten Seite
 
         // Organisation-Name in UUID umwandeln
         const orgUid = organisationFilter ? orgNameToUidMap[organisationFilter] : '';
@@ -436,6 +458,20 @@ const Benutzerliste = () => {
         fetchUsers();
         handleCloseForm();
     };
+
+    // ========== PAGINATION-HANDLER ==========
+
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
+
+    // Berechne die anzuzeigenden Benutzer für aktuelle Seite
+    const displayedUsers = users.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
     if (loading && users.length === 0) {
         return <CircularProgress />;
@@ -618,14 +654,14 @@ const Benutzerliste = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {users.length === 0 ? (
+                            {displayedUsers.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={6} align="center" sx={{ py: 4, color: '#9E9E9E' }}>
                                         <Box sx={{ fontSize: 14 }}>Keine Benutzer gefunden</Box>
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                users.map((user, index) => {
+                                displayedUsers.map((user, index) => {
                                     // Get all active (not deleted) organizations
                                     const activeOrgs = user.organisations?.filter(org => !org.deleted) || [];
 
@@ -777,6 +813,29 @@ const Benutzerliste = () => {
                             )}
                         </TableBody>
                     </Table>
+                    {/* Pagination für Frontend */}
+                    <TablePagination
+                        component="div"
+                        count={users.length}
+                        page={page}
+                        onPageChange={handleChangePage}
+                        rowsPerPage={rowsPerPage}
+                        onRowsPerPageChange={handleChangeRowsPerPage}
+                        rowsPerPageOptions={[25, 50, 100, 200]}
+                        labelRowsPerPage="Zeilen pro Seite:"
+                        labelDisplayedRows={({ from, to, count }) => `${from}-${to} von ${count}`}
+                        sx={{
+                            borderTop: '2px solid #E0E0E0',
+                            '.MuiTablePagination-toolbar': {
+                                paddingLeft: 2,
+                                paddingRight: 2,
+                            },
+                            '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
+                                fontWeight: 600,
+                                color: '#666',
+                            },
+                        }}
+                    />
                 </TableContainer>
             )}
 
