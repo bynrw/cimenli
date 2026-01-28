@@ -47,7 +47,7 @@ import {
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon, Search as SearchIcon, Close as CloseIcon, Add as AddIcon, FilterList as FilterListIcon, Business as BusinessIcon, AccountCircle as AccountCircleIcon, ViewModule as ViewModuleIcon, ViewList as ViewListIcon } from '@mui/icons-material';
 // import { useKeycloak } from '@react-keycloak/web';
-import userService, { setKeycloakInstance } from '../services/userService';  // Echter userService für Backend-API
+import userService, { setKeycloakInstance } from '../services/mockUserService';  // Echter userService für Backend-API
 // import userService, { setKeycloakInstance } from '../services/mockUserService';  // Mock-Daten für lokale Tests ohne Backend
 import BenutzerDetail from './BenutzerDetail';
 import BenutzerFormStepper from './BenutzerFormStepper';
@@ -779,10 +779,6 @@ const Benutzerliste = () => {
                                                     transform: 'translateY(-8px)',
                                                     boxShadow: '0 12px 24px rgba(65, 105, 225, 0.15)',
                                                     borderColor: 'rgba(65, 105, 225, 0.3)',
-                                                    '& .action-buttons': {
-                                                        opacity: 1,
-                                                        transform: 'translateY(0)',
-                                                    },
                                                 },
                                             }}
                                             onClick={() => handleViewDetails(user.userUid)}
@@ -931,8 +927,6 @@ const Benutzerliste = () => {
                                                     mt: 2,
                                                     pt: 2,
                                                     borderTop: '1px solid rgba(0, 0, 0, 0.08)',
-                                                    opacity: 0,
-                                                    transform: 'translateY(-10px)',
                                                     transition: 'all 0.3s ease',
                                                 }}
                                                 onClick={(e) => e.stopPropagation()}
@@ -1055,9 +1049,6 @@ const Benutzerliste = () => {
                                                             transition: 'all 0.2s ease',
                                                             '&:hover': {
                                                                 backgroundColor: 'rgba(65, 105, 225, 0.05)',
-                                                                '& .table-actions': {
-                                                                    opacity: 1,
-                                                                },
                                                             },
                                                         }}
                                                     >
@@ -1159,8 +1150,6 @@ const Benutzerliste = () => {
                                                                     display: 'flex',
                                                                     gap: 1,
                                                                     justifyContent: 'flex-end',
-                                                                    opacity: { xs: 1, md: 0 },
-                                                                    transition: 'opacity 0.2s ease',
                                                                 }}
                                                             >
                                                                 <Tooltip title="Details">
