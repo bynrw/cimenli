@@ -23,6 +23,50 @@ let keycloakInstance = null;
  */
 export const setKeycloakInstance = (keycloak) => {
     keycloakInstance = keycloak;
+
+    if (keycloak && keycloak.token) {
+        console.log('✅ Keycloak-Instanz erfolgreich gesetzt:', {
+            authenticated: keycloak.authenticated,
+            user: keycloak.tokenParsed?.preferred_username,
+            email: keycloak.tokenParsed?.email,
+            roles: keycloak.tokenParsed?.realm_access?.roles,
+            tokenLength: keycloak.token.length,
+            expiresAt: keycloak.tokenParsed?.exp
+                ? new Date(keycloak.tokenParsed.exp * 1000).toLocaleString('de-DE')
+                : 'N/A'
+        });
+    } else {
+        console.warn('⚠️ Keycloak-Instanz gesetzt, aber kein Token verfügbar');
+    }
+};
+
+/**
+ * Aktuellen Token-Status abrufen (für Debugging)
+ * @returns {Object} Token-Status-Informationen
+ */
+export const getTokenInfo = () => {
+    if (!keycloakInstance) {
+        return { error: 'Keine Keycloak-Instanz gesetzt' };
+    }
+
+    if (!keycloakInstance.token) {
+        return { error: 'Kein Token verfügbar' };
+    }
+
+    return {
+        hasToken: !!keycloakInstance.token,
+        authenticated: keycloakInstance.authenticated,
+        tokenPreview: keycloakInstance.token.substring(0, 100) + '...',
+        fullToken: keycloakInstance.token,
+        tokenParsed: keycloakInstance.tokenParsed,
+        user: keycloakInstance.tokenParsed?.preferred_username,
+        email: keycloakInstance.tokenParsed?.email,
+        roles: keycloakInstance.tokenParsed?.realm_access?.roles,
+        expiresAt: keycloakInstance.tokenParsed?.exp
+            ? new Date(keycloakInstance.tokenParsed.exp * 1000).toLocaleString('de-DE')
+            : 'N/A',
+        isExpired: keycloakInstance.isTokenExpired()
+    };
 };
 
 /**
@@ -48,18 +92,36 @@ axiosInstance.interceptors.request.use(
         if (keycloakInstance && keycloakInstance.token) {
             // Token automatisch erneuern, wenn es bald abläuft (5 Sekunden vor Ablauf)
             try {
-                await keycloakInstance.updateToken(5);
+                const refreshed = await keycloakInstance.updateToken(5);
+                if (refreshed) {
+                    console.log('🔄 Token wurde erneuert');
+                }
             } catch (error) {
-                console.error('Token konnte nicht erneuert werden:', error);
+                console.error('❌ Token konnte nicht erneuert werden:', error);
                 keycloakInstance.login();
             }
 
             // Bearer Token zu Authorization-Header hinzufügen
             config.headers.Authorization = `Bearer ${keycloakInstance.token}`;
+
+            // Debug: Token-Info ausgeben
+            console.log('🔐 Bearer Token wird gesendet:', {
+                url: config.url,
+                method: config.method.toUpperCase(),
+                tokenPreview: keycloakInstance.token.substring(0, 50) + '...',
+                tokenLength: keycloakInstance.token.length,
+                expiresAt: keycloakInstance.tokenParsed?.exp
+                    ? new Date(keycloakInstance.tokenParsed.exp * 1000).toLocaleString('de-DE')
+                    : 'N/A',
+                user: keycloakInstance.tokenParsed?.preferred_username || 'N/A'
+            });
+        } else {
+            console.warn('⚠️ Kein Keycloak-Token verfügbar für Request:', config.url);
         }
         return config;
     },
     (error) => {
+        console.error('❌ Request Interceptor Fehler:', error);
         return Promise.reject(error);
     }
 );
@@ -68,11 +130,30 @@ axiosInstance.interceptors.request.use(
  * Response Interceptor: Behandelt 401-Fehler (nicht autorisiert)
  */
 axiosInstance.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        console.log('✅ API Response erfolgreich:', {
+            url: response.config.url,
+            status: response.status,
+            dataType: Array.isArray(response.data) ? 'Array' : typeof response.data
+        });
+        return response;
+    },
     (error) => {
-        if (error.response?.status === 401 && keycloakInstance) {
-            // Bei 401 Fehler: Benutzer zur Anmeldung weiterleiten
-            keycloakInstance.login();
+        if (error.response?.status === 401) {
+            console.error('🚫 401 Unauthorized - Token ungültig oder abgelaufen');
+            if (keycloakInstance) {
+                console.log('🔄 Weiterleitung zur Anmeldung...');
+                keycloakInstance.login();
+            }
+        } else if (error.response?.status === 403) {
+            console.error('🚫 403 Forbidden - Keine Berechtigung für diese Ressource');
+        } else {
+            console.error('❌ API Fehler:', {
+                url: error.config?.url,
+                status: error.response?.status,
+                message: error.message,
+                data: error.response?.data
+            });
         }
         return Promise.reject(error);
     }
