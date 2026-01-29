@@ -46,21 +46,34 @@ import {
     ToggleButtonGroup
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon, Search as SearchIcon, Close as CloseIcon, Add as AddIcon, FilterList as FilterListIcon, Business as BusinessIcon, AccountCircle as AccountCircleIcon, ViewModule as ViewModuleIcon, ViewList as ViewListIcon } from '@mui/icons-material';
-// import { useKeycloak } from '@react-keycloak/web';
-import userService, { setKeycloakInstance } from '../services/mockUserService';  // Echter userService für Backend-API
+import { useKeycloak } from '@react-keycloak/web';
+import userService, { setKeycloakInstance } from '../services/userService';  // Echter userService für Backend-API
 // import userService, { setKeycloakInstance } from '../services/mockUserService';  // Mock-Daten für lokale Tests ohne Backend
 import BenutzerDetail from './BenutzerDetail';
 import BenutzerFormStepper from './BenutzerFormStepper';
 
 const Benutzerliste = () => {
-    // const { keycloak } = useKeycloak();
+    const { keycloak } = useKeycloak();
 
     // Keycloak-Instanz im userService setzen
-    // useEffect(() => {
-    //     if (keycloak) {
-    //         setKeycloakInstance(keycloak);
-    //     }
-    // }, [keycloak]);
+    useEffect(() => {
+        if (keycloak) {
+            setKeycloakInstance(keycloak);
+            // Token in der Konsole ausgeben
+            console.log('=== KEYCLOAK TOKEN INFORMATION ===');
+            console.log('Bearer Token:', keycloak.token);
+            console.log('Token Type:', keycloak.tokenType);
+            console.log('Refresh Token:', keycloak.refreshToken);
+            console.log('Decoded Token:', keycloak.tokenParsed);
+            console.log('Token expires in:', keycloak.tokenParsed?.exp ? new Date(keycloak.tokenParsed.exp * 1000).toLocaleString() : 'N/A');
+            console.log('User ID:', keycloak.tokenParsed?.sub);
+            console.log('Username:', keycloak.tokenParsed?.preferred_username);
+            console.log('Email:', keycloak.tokenParsed?.email);
+            console.log('Roles:', keycloak.tokenParsed?.realm_access?.roles);
+            console.log('==================================');
+
+        }
+    }, [keycloak]);
 
     // ========== STATE-VERWALTUNG ==========
 
