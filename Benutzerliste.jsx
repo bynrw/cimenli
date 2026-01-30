@@ -41,25 +41,20 @@ import BenutzerFormStepper from './BenutzerFormStepper';
 const Benutzerliste = () => {
     const { keycloak } = useKeycloak();
 
-    // Keycloak-Instanz im userService setzen
+    // Keycloak-Instanz im userService setzen - NUR beim ersten Mount
     useEffect(() => {
-        if (keycloak) {
+        if (keycloak?.authenticated) {
             setKeycloakInstance(keycloak);
-            // Token in der Konsole ausgeben
+            // Token in der Konsole ausgeben (nur einmal beim Login)
             console.log('=== KEYCLOAK TOKEN INFORMATION ===');
             console.log('Bearer Token:', keycloak.token);
-            console.log('Token Type:', keycloak.tokenType);
-            console.log('Refresh Token:', keycloak.refreshToken);
-            console.log('Decoded Token:', keycloak.tokenParsed);
-            console.log('Token expires in:', keycloak.tokenParsed?.exp ? new Date(keycloak.tokenParsed.exp * 1000).toLocaleString() : 'N/A');
             console.log('User ID:', keycloak.tokenParsed?.sub);
             console.log('Username:', keycloak.tokenParsed?.preferred_username);
             console.log('Email:', keycloak.tokenParsed?.email);
             console.log('Roles:', keycloak.tokenParsed?.realm_access?.roles);
             console.log('==================================');
-
         }
-    }, [keycloak]);
+    }, [keycloak?.authenticated]); // NUR auf authenticated-Status reagieren, nicht auf das ganze Objekt
 
     const [allUsers, setAllUsers] = useState([]);
     const [users, setUsers] = useState([]);
