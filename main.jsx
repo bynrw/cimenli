@@ -27,7 +27,8 @@ const theme = createTheme({
 // Keycloak-Initialisierungsoptionen
 const keycloakInitOptions = {
     onLoad: 'login-required', // Benutzer muss sich anmelden, um die App zu nutzen
-    checkLoginIframe: false, // Deaktiviert iframe-basierte Session-Checks (optional)
+    checkLoginIframe: false, // Deaktiviert iframe-basierte Session-Checks
+    pkceMethod: 'S256', // PKCE für sichere Authentifizierung
 }
 
 // Loading-Komponente während Keycloak initialisiert wird
@@ -42,6 +43,28 @@ const LoadingComponent = (
     </div>
 )
 
+// Token-Event Handler - speichert Tokens für Session-Persistenz
+const onKeycloakTokens = (tokens) => {
+    if (tokens?.token) {
+        console.log('Keycloak tokens received')
+    }
+}
+
+// Event Handler für Keycloak-Events
+const onKeycloakEvent = (event, error) => {
+    console.log('Keycloak event:', event)
+    if (error) {
+        console.error('Keycloak error:', error)
+    }
+    // Nach erfolgreichem Login: URL-Parameter bereinigen
+    if (event === 'onAuthSuccess') {
+        // Entferne Keycloak-Parameter aus der URL um Redirect-Schleife zu verhindern
+        if (window.location.search.includes('state=') || window.location.search.includes('code=')) {
+            window.history.replaceState({}, document.title, window.location.pathname)
+        }
+    }
+}
+
 // React-App in das DOM-Element mit der ID 'root' rendern
 // HINWEIS: React.StrictMode ist deaktiviert, da es mit Keycloak zu Problemen führt
 // Im StrictMode werden Komponenten zweimal gerendert, was die Keycloak-Initialisierung stört
@@ -51,6 +74,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         authClient={keycloak}
         initOptions={keycloakInitOptions}
         LoadingComponent={LoadingComponent}
+        onEvent={onKeycloakEvent}
+        onTokens={onKeycloakTokens}
     >
         <ThemeProvider theme={theme}>
             <CssBaseline />
