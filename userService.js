@@ -1,29 +1,10 @@
-/**
- * USER SERVICE - API-Kommunikationsschicht
- * 
- * Diese Datei verwaltet alle HTTP-Anfragen zum Backend:
- * - CRUD-Operationen für Benutzer (Create, Read, Update, Delete)
- * - Axios-Konfiguration mit CORS-Unterstützung
- * - Keycloak-Token-Integration für Authentifizierung
- * - Fehlerbehandlung für API-Aufrufe
- */
-
 import axios from 'axios';
 
-// Basis-URL des Spring Boot Backend-Servers
 const API_BASE_URL = 'http://localhost:8080/api';
-
-// Variable für Keycloak-Instanz (wird von außen gesetzt)
 let keycloakInstance = null;
 
-/**
- * Keycloak-Instanz setzen
- * Diese Methode muss beim App-Start aufgerufen werden
- * @param {Object} keycloak - Die Keycloak-Instanz aus useKeycloak()
- */
 export const setKeycloakInstance = (keycloak) => {
     keycloakInstance = keycloak;
-
     if (keycloak && keycloak.token) {
         console.log('✅ Keycloak-Instanz erfolgreich gesetzt:', {
             authenticated: keycloak.authenticated,
@@ -40,10 +21,6 @@ export const setKeycloakInstance = (keycloak) => {
     }
 };
 
-/**
- * Aktuellen Token-Status abrufen (für Debugging)
- * @returns {Object} Token-Status-Informationen
- */
 export const getTokenInfo = () => {
     if (!keycloakInstance) {
         return { error: 'Keine Keycloak-Instanz gesetzt' };
@@ -69,42 +46,29 @@ export const getTokenInfo = () => {
     };
 };
 
-/**
- * Konfigurierte Axios-Instanz für API-Anfragen
- * - baseURL: Automatisches Voranstellen der API-URL bei allen Anfragen
- * - headers: JSON-Content-Type für Request und Response
- * - withCredentials: Ermöglicht das Senden von Cookies für CORS-Anfragen
- */
 const axiosInstance = axios.create({
     baseURL: API_BASE_URL,
     headers: {
-        'Content-Type': 'application/json',  // Daten als JSON senden
-        'Accept': 'application/json'          // JSON-Antworten erwarten
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
     },
-    withCredentials: true  // Wichtig für Cross-Origin-Requests mit Authentifizierung
+    withCredentials: true
 });
 
-/**
- * Request Interceptor: Fügt Keycloak-Token zu jedem Request hinzu
- */
+// Request Interceptor: Fügt Keycloak Bearer Token hinzu
 axiosInstance.interceptors.request.use(
     async (config) => {
         if (keycloakInstance && keycloakInstance.token) {
-            // Token automatisch erneuern, wenn es bald abläuft (5 Sekunden vor Ablauf)
             try {
                 const refreshed = await keycloakInstance.updateToken(5);
-                if (refreshed) {
-                    console.log('🔄 Token wurde erneuert');
-                }
+                if (refreshed) console.log('🔄 Token wurde erneuert');
             } catch (error) {
                 console.error('❌ Token konnte nicht erneuert werden:', error);
                 keycloakInstance.login();
             }
 
-            // Bearer Token zu Authorization-Header hinzufügen
             config.headers.Authorization = `Bearer ${keycloakInstance.token}`;
 
-            // Debug: Token-Info ausgeben
             console.log('🔐 Bearer Token wird gesendet:', {
                 url: config.url,
                 method: config.method.toUpperCase(),
@@ -126,9 +90,7 @@ axiosInstance.interceptors.request.use(
     }
 );
 
-/**
- * Response Interceptor: Behandelt 401-Fehler (nicht autorisiert)
- */
+// Response Interceptor: Behandelt 401/403 Fehler
 axiosInstance.interceptors.response.use(
     (response) => {
         console.log('✅ API Response erfolgreich:', {
@@ -159,9 +121,6 @@ axiosInstance.interceptors.response.use(
     }
 );
 
-/**
- * UserService-Objekt mit allen API-Methoden für Benutzerverwaltung
- */
 const userService = {
     /**
      * Alle Benutzer abrufen mit optionalen Suchparametern
@@ -174,37 +133,18 @@ const userService = {
      */
     getUsers: async (searchParams = {}) => {
         try {
-            // Query-Parameter als flache Struktur vorbereiten
             const params = {};
 
-            // Suchbegriff für Username/Nachname
             if (searchParams.searchUsernameOrLastname) {
                 params.searchUsernameOrLastname = searchParams.searchUsernameOrLastname;
                 params.searchMode = 'SUBSTRING';
             }
+            if (searchParams.orgUid) params.orgUid = searchParams.orgUid;
+            if (searchParams.levelTypeId) params.levelTypeId = searchParams.levelTypeId;
+            if (searchParams.levelId) params.levelId = searchParams.levelId;
 
-            // Organisation UID
-            if (searchParams.orgUid) {
-                params.orgUid = searchParams.orgUid;
-            }
-
-            // Level Type ID
-            if (searchParams.levelTypeId) {
-                params.levelTypeId = searchParams.levelTypeId;
-            }
-
-            // Level ID
-            if (searchParams.levelId) {
-                params.levelId = searchParams.levelId;
-            }
-
-            console.log('Sending GET request to /api/users with params:', params);
-
-            // GET-Request an /api/users mit Query-Parametern
             const response = await axiosInstance.get('/users', { params });
-
-            console.log('Received response:', response.data);
-            return response.data;  // Gibt die Benutzerliste zurück
+            return response.data;
         } catch (error) {
             console.error('Fehler beim Abrufen der Benutzer:', error);
             console.error('Request params were:', searchParams);
@@ -221,9 +161,8 @@ const userService = {
     */
     getRoles: async (params = {}) => {
         try {
-            // GET-Request an /api/roles/select mit Query-Parametern
             const response = await axiosInstance.get('/roles/select', { params });
-            return response.data.options || [];  // API gibt { options: [{id, label}] } zurück
+            return response.data.options || [];
         } catch (error) {
             console.error('Fehler beim Abrufen der Rollen:', error);
             throw error;
@@ -240,9 +179,8 @@ const userService = {
     */
     getOrganisations: async (params = {}) => {
         try {
-            // GET-Request an /api/organisations/select mit Query-Parametern
             const response = await axiosInstance.get('/organisations/select', { params });
-            return response.data.options || [];  // API gibt { options: [{uuid, label}] } zurück
+            return response.data.options || [];
         } catch (error) {
             console.error('Fehler beim Abrufen der Organisationen:', error);
             throw error;
@@ -255,9 +193,8 @@ const userService = {
     */
     getOrganisationLevelTypes: async () => {
         try {
-            // GET-Request an /api/organisations/leveltypes/select
             const response = await axiosInstance.get('/organisations/leveltypes/select');
-            return response.data.options || [];  // API gibt { options: [{id, label}] } zurück
+            return response.data.options || [];
         } catch (error) {
             console.error('Fehler beim Abrufen der Organisationstypen:', error);
             throw error;
@@ -270,9 +207,8 @@ const userService = {
     */
     getOrganisationLevels: async () => {
         try {
-            // GET-Request an /api/organisations/level/select
             const response = await axiosInstance.get('/organisations/level/select');
-            return response.data.options || [];  // API gibt { options: [{id, label}] } zurück
+            return response.data.options || [];
         } catch (error) {
             console.error('Fehler beim Abrufen der Organisationsebenen:', error);
             throw error;
@@ -286,9 +222,8 @@ const userService = {
      */
     getUserById: async (userUid) => {
         try {
-            // GET-Request an /api/users/{userUid}
             const response = await axiosInstance.get(`/users/${userUid}`);
-            return response.data;  // Gibt detaillierte Benutzerdaten zurück
+            return response.data;
         } catch (error) {
             console.error(`Fehler beim Abrufen von Benutzer ${userUid}:`, error);
             throw error;
@@ -307,7 +242,6 @@ const userService = {
      */
     createUser: async (userData) => {
         try {
-            // Datenstruktur für Backend vorbereiten
             const requestData = {
                 firstName: userData.firstName,
                 lastName: userData.lastName,
@@ -321,11 +255,8 @@ const userService = {
                 }))
             };
 
-            console.log('Sending POST request to /users with data:', requestData);
-            // POST-Request an /api/users mit Benutzerdaten im Body
             const response = await axiosInstance.post('/users', requestData);
-            console.log('Create user response:', response);
-            return response.data;  // Gibt den neu erstellten Benutzer zurück
+            return response.data;
         } catch (error) {
             console.error('Fehler beim Erstellen des Benutzers:', error);
             console.error('Error response:', error.response);
@@ -342,11 +273,8 @@ const userService = {
      */
     updateUser: async (userData) => {
         try {
-            if (!userData.userUid) {
-                throw new Error('userUid ist erforderlich für Update');
-            }
+            if (!userData.userUid) throw new Error('userUid ist erforderlich für Update');
 
-            // Datenstruktur für Backend vorbereiten
             const requestData = {
                 firstName: userData.firstName,
                 lastName: userData.lastName,
@@ -360,10 +288,8 @@ const userService = {
                 }))
             };
 
-            console.log(`Sending PUT request to /users/${userData.userUid} with data:`, requestData);
-            // PUT-Request an /api/users/{userUid} mit vollständigen Benutzerdaten
             const response = await axiosInstance.put(`/users/${userData.userUid}`, requestData);
-            return response.data;  // Gibt den aktualisierten Benutzer zurück
+            return response.data;
         } catch (error) {
             console.error('Fehler beim Aktualisieren des Benutzers:', error);
             throw error;
@@ -377,16 +303,13 @@ const userService = {
      */
     deleteUser: async (userUid) => {
         try {
-            // DELETE-Request an /api/users/{userUid}
             const response = await axiosInstance.delete(`/users/${userUid}`);
-            return response.data;  // Gibt Bestätigung zurück
+            return response.data;
         } catch (error) {
             console.error(`Fehler beim Löschen von Benutzer ${userUid}:`, error);
             throw error;
         }
     }
-
-
 };
 
 export default userService;
