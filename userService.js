@@ -52,31 +52,42 @@ const axiosInstance = axios.create({
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     },
-    withCredentials: true
+    withCredentials: false // CORS: Keine Credentials senden
 });
+
+// Flag um Redirect-Schleifen zu verhindern
+let isRefreshing = false;
 
 // Request Interceptor: Fügt Keycloak Bearer Token hinzu
 axiosInstance.interceptors.request.use(
     async (config) => {
         if (keycloakInstance && keycloakInstance.token) {
-            try {
-                const refreshed = await keycloakInstance.updateToken(5);
-                if (refreshed) console.log('🔄 Token wurde erneuert');
-            } catch (error) {
-                console.error('❌ Token konnte nicht erneuert werden:', error);
-                keycloakInstance.login();
+            // Token nur erneuern wenn nicht bereits am Erneuern
+            if (!isRefreshing) {
+                try {
+                    isRefreshing = true;
+                    // Nur erneuern wenn Token in weniger als 30 Sekunden abläuft
+                    const minValidity = 30;
+                    if (keycloakInstance.isTokenExpired(minValidity)) {
+                        const refreshed = await keycloakInstance.updateToken(minValidity);
+                        if (refreshed) {
+                            console.log('🔄 Token wurde erneuert');
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Token konnte nicht erneuert werden:', error);
+                    // NICHT automatisch login aufrufen - das verursacht die Schleife!
+                } finally {
+                    isRefreshing = false;
+                }
             }
 
             config.headers.Authorization = `Bearer ${keycloakInstance.token}`;
 
             console.log('🔐 Bearer Token wird gesendet:', {
                 url: config.url,
-                method: config.method.toUpperCase(),
-                tokenPreview: keycloakInstance.token.substring(0, 50) + '...',
-                tokenLength: keycloakInstance.token.length,
-                expiresAt: keycloakInstance.tokenParsed?.exp
-                    ? new Date(keycloakInstance.tokenParsed.exp * 1000).toLocaleString('de-DE')
-                    : 'N/A',
+                method: config.method?.toUpperCase(),
+                tokenLength: keycloakInstance.token?.length,
                 user: keycloakInstance.tokenParsed?.preferred_username || 'N/A'
             });
         } else {
@@ -103,10 +114,8 @@ axiosInstance.interceptors.response.use(
     (error) => {
         if (error.response?.status === 401) {
             console.error('🚫 401 Unauthorized - Token ungültig oder abgelaufen');
-            if (keycloakInstance) {
-                console.log('🔄 Weiterleitung zur Anmeldung...');
-                keycloakInstance.login();
-            }
+            // NICHT automatisch login() aufrufen - das verursacht Redirect-Schleifen!
+            // Stattdessen den Fehler an die Komponente weitergeben
         } else if (error.response?.status === 403) {
             console.error('🚫 403 Forbidden - Keine Berechtigung für diese Ressource');
         } else {
