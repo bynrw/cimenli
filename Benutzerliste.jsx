@@ -1,16 +1,3 @@
-/**
- * BENUTZERLISTE.JSX - Haupt-Tabellen-Komponente
- * 
- * Diese Komponente verwaltet:
- * - Anzeige aller Benutzer in einer Tabelle
- * - Suchfunktion nach Name/Email/Benutzername
- * - Filterung nach Organisationen
- * - Anzeige von Benutzerdetails in einem Modal
- * - Löschen von Benutzern mit Bestätigungsdialog
- * - Kommunikation mit dem Backend über userService
- * - Keycloak-Integration für Authentifizierung
- */
-
 import React, { useState, useEffect, useRef } from 'react';
 import {
     Table,
@@ -47,8 +34,7 @@ import {
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon, Search as SearchIcon, Close as CloseIcon, Add as AddIcon, FilterList as FilterListIcon, Business as BusinessIcon, AccountCircle as AccountCircleIcon, ViewModule as ViewModuleIcon, ViewList as ViewListIcon } from '@mui/icons-material';
 import { useKeycloak } from '@react-keycloak/web';
-import userService, { setKeycloakInstance } from '../services/userService';  // Echter userService für Backend-API
-// import userService, { setKeycloakInstance } from '../services/mockUserService';  // Mock-Daten für lokale Tests ohne Backend
+import userService, { setKeycloakInstance } from '../services/userService';
 import BenutzerDetail from './BenutzerDetail';
 import BenutzerFormStepper from './BenutzerFormStepper';
 
@@ -75,140 +61,60 @@ const Benutzerliste = () => {
         }
     }, [keycloak]);
 
-    // ========== STATE-VERWALTUNG ==========
-
-    // Vollständige Benutzerliste (ungefiltert)
     const [allUsers, setAllUsers] = useState([]);
-
-    // Gefilterte Benutzerdaten für Anzeige
     const [users, setUsers] = useState([]);
-
-    // Ladezustand während API-Anfragen
     const [loading, setLoading] = useState(false);
-
-    // Fehlermeldungen für API-Fehler
     const [error, setError] = useState(null);
-
-    // Suchbegriff für Name/Email-Suche
     const [searchTerm, setSearchTerm] = useState('');
-
-    // Ausgewählte Organisation-UUID für Filterung (direkt UUID statt Name)
     const [organisationFilter, setOrganisationFilter] = useState('');
-
-    // Aktuell ausgewählter Benutzer für Detailansicht
     const [selectedUser, setSelectedUser] = useState(null);
-
-    // Status des Detail-Dialogs (offen/geschlossen)
     const [detailOpen, setDetailOpen] = useState(false);
-
-    // Status des Lösch-Bestätigungsdialogs
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-
-    // ID des zu löschenden Benutzers
     const [deleteTargetId, setDeleteTargetId] = useState(null);
-
-    // Liste aller verfügbaren Organisationen als Objekte: [{uuid, label}]
     const [organisations, setOrganisations] = useState([]);
-
-    // Liste aller verfügbaren Rollen als Objekte: [{id, label}]
     const [availableRoles, setAvailableRoles] = useState([]);
-
-    // Ausgewählte Rollen-ID für Filterung (direkt ID/UUID statt Name)
     const [roleFilter, setRoleFilter] = useState('');
-
-    // Status des Formular-Dialogs (offen/geschlossen)
     const [formOpen, setFormOpen] = useState(false);
-
-    // Benutzer für Bearbeitung (null = neuer Benutzer erstellen)
     const [editingUser, setEditingUser] = useState(null);
-
-    // Pagination-State
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(50);
-
-    // View Mode (table oder cards)
-    const [viewMode, setViewMode] = useState('cards'); // 'table' oder 'cards'
-
-    // Debouncing-Timer für Suche
+    const [viewMode, setViewMode] = useState('cards');
     const searchTimerRef = useRef(null);
 
-    /**
-     * useEffect: Wird beim ersten Laden der Komponente ausgeführt
-     * - Lädt alle Benutzer vom Backend
-     * - Lädt alle verfügbaren Organisationen
-     * - Lädt alle verfügbaren Rollen
-     */
     useEffect(() => {
-        fetchUsers();              // Benutzer vom Backend laden
-        fetchOrganisations();      // Organisationen vom Backend laden
-        fetchRoles();              // Alle verfügbaren Rollen laden
-
-        // Cleanup: Timer beim Unmount abbrechen
+        fetchUsers();
+        fetchOrganisations();
+        fetchRoles();
         return () => {
-            if (searchTimerRef.current) {
-                clearTimeout(searchTimerRef.current);
-            }
+            if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
         };
-    }, []); // Leeres Array [] bedeutet: nur einmal beim Komponentenstart ausführen
+    }, []);
 
-    // ========== API-KOMMUNIKATION ==========
-
-    /**
-     * Benutzer vom Backend laden mit Server-Side-Filtering
-     * @param {string} nameSearch - Suchbegriff für Username/Nachname
-     * @param {string} orgUid - Organisation UID zum Filtern
-     * @param {string} roleId - Rollen-ID zum Filtern
-     * 
-     * Diese Funktion:
-     * 1. Setzt den Ladezustand
-     * 2. Baut Filter-Parameter für Backend auf
-     * 3. Ruft die API über userService auf
-     * 4. Verarbeitet verschiedene Antwortformate (HAL, Array, Content)
-     * 5. Extrahiert und speichert die Benutzerdaten
-     * 6. Extrahiert die Organisationen für den Filter
-     */
+    // Server-Side-Filtering: Verarbeitet HAL, Array und Content-Formate
     const fetchUsers = async (nameSearch = '', orgUid = '', roleId = '') => {
         setLoading(true);
         setError(null);
 
         try {
-            console.log('fetchUsers called with:', { nameSearch, orgUid, roleId });
-
-            // Filter-Parameter für Backend vorbereiten
             const searchParams = {};
-            if (nameSearch) {
-                searchParams.searchUsernameOrLastname = nameSearch;
-            }
-            if (orgUid) {
-                searchParams.orgUid = orgUid;
-            }
-            if (roleId) {
-                searchParams.roleId = roleId;  // Backend erwartet roleId, nicht roleName!
-            }
+            if (nameSearch) searchParams.searchUsernameOrLastname = nameSearch;
+            if (orgUid) searchParams.orgUid = orgUid;
+            if (roleId) searchParams.roleId = roleId;
 
-            console.log('Sending searchParams to backend:', searchParams);
-
-            // API-Aufruf über userService mit Filter-Parametern
             const response = await userService.getUsers(searchParams);
-            console.log('API Response:', response);
 
-            // ===== Verschiedene API-Antwortformate verarbeiten =====
             let userList = [];
-
             if (response._embedded && response._embedded.users) {
                 userList = response._embedded.users;
-            }
-            else if (Array.isArray(response)) {
+            } else if (Array.isArray(response)) {
                 userList = response;
-            }
-            else if (response.content && Array.isArray(response.content)) {
+            } else if (response.content && Array.isArray(response.content)) {
                 userList = response.content;
             }
 
-            console.log('Extracted users:', userList);
             const userArray = Array.isArray(userList) ? userList : [];
-            setAllUsers(userArray);  // Vollständige Liste speichern
-            setUsers(userArray);     // Gefilterte Liste vom Backend anzeigen
+            setAllUsers(userArray);
+            setUsers(userArray);
         } catch (err) {
             setError('Fehler beim Laden der Benutzer');
             console.error('Error details:', err.response?.data || err.message);
@@ -217,18 +123,11 @@ const Benutzerliste = () => {
         }
     };
 
-    /**
-     * Alle verfügbaren Organisationen vom Backend laden
-     * Speichert Objekte mit {uuid, label} direkt für Dropdown-Nutzung
-     */
     const fetchOrganisations = async () => {
         try {
             const orgs = await userService.getOrganisations();
-            // API gibt [{uuid, label}] zurück - direkt speichern
             if (Array.isArray(orgs)) {
-                const sortedOrgs = orgs.sort((a, b) => a.label.localeCompare(b.label));
-                setOrganisations(sortedOrgs);
-                console.log('Organisationen geladen:', sortedOrgs);
+                setOrganisations(orgs.sort((a, b) => a.label.localeCompare(b.label)));
             }
         } catch (err) {
             console.error('Fehler beim Laden der Organisationen:', err);
@@ -236,176 +135,75 @@ const Benutzerliste = () => {
         }
     };
 
-    /**
-     * Alle verfügbaren Rollen vom Backend laden
-     * Speichert Objekte mit {id, label} direkt für Dropdown-Nutzung
-     */
     const fetchRoles = async () => {
         try {
             const roles = await userService.getRoles();
-            console.log('Geladene Rollen vom Backend:', roles);
-
-            // API gibt uuid statt id zurück - zu {id, label} transformieren
             const transformedRoles = Array.isArray(roles)
                 ? roles.map(role => ({ id: role.uuid || role.id, label: role.label }))
                 : [];
             setAvailableRoles(transformedRoles);
-            console.log('Rollen geladen:', transformedRoles);
         } catch (err) {
             console.error('Fehler beim Laden der Rollen:', err);
             setAvailableRoles([]);
         }
     };
 
-    // ========== SUCH- UND FILTER-FUNKTIONEN ==========
-
-    /**
-     * Handler für Name/Email/Benutzername-Suche mit Debouncing
-     * @param {Event} e - Input-Change-Event
-     * 
-     * Wartet 500ms nach letzter Eingabe bevor Backend abgefragt wird
-     * Verhindert zu viele API-Calls bei 10.000+ Benutzern
-     */
+    // Debounce Search: 500ms Verzögerung verhindert zu viele API-Calls
     const handleNameSearch = (e) => {
         const value = e.target.value;
         setSearchTerm(value);
-        setPage(0); // Zurück zur ersten Seite bei neuer Suche
-
-        // Vorherigen Timer abbrechen
-        if (searchTimerRef.current) {
-            clearTimeout(searchTimerRef.current);
-        }
-
-        // Neuen Timer starten (500ms Verzögerung)
+        setPage(0);
+        if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
         searchTimerRef.current = setTimeout(() => {
-            // Filter enthalten bereits UUIDs/IDs - direkt verwenden
             fetchUsers(value, organisationFilter, roleFilter);
         }, 500);
     };
 
-    /**
-     * Handler für Organisations-Filter
-     * @param {Event} e - Select-Change-Event
-     * 
-     * Dropdown liefert direkt die UUID - keine Umwandlung mehr nötig
-     */
     const handleOrganisationFilter = (e) => {
-        const orgUid = e.target.value; // Direkt UUID aus Dropdown
+        const orgUid = e.target.value;
         setOrganisationFilter(orgUid);
-        setPage(0); // Zurück zur ersten Seite
-
-        console.log('Filter Organisation:', { orgUid, roleId: roleFilter });
-
-        // Server-Side-Filtering: Backend mit UUID abfragen
+        setPage(0);
         fetchUsers(searchTerm, orgUid, roleFilter);
     };
 
-    /**
-     * Handler für Rollen-Filter
-     * @param {Event} e - Select-Change-Event
-     * 
-     * Dropdown liefert direkt die ID/UUID - keine Umwandlung mehr nötig
-     */
     const handleRoleFilter = (e) => {
-        const roleId = e.target.value; // Direkt ID/UUID aus Dropdown
+        const roleId = e.target.value;
         setRoleFilter(roleId);
-        setPage(0); // Zurück zur ersten Seite
-
-        console.log('=== Filter Rolle ===');
-        console.log('Rollen-ID:', roleId);
-        console.log('Suchbegriff:', searchTerm);
-        console.log('Org-UUID:', organisationFilter);
-
-        // Server-Side-Filtering: Backend mit roleId abfragen
+        setPage(0);
         fetchUsers(searchTerm, organisationFilter, roleId);
     };
 
-    /**
-     * HINWEIS: Client-seitige Filterung wurde entfernt!
-     * 
-     * Alle Filter werden jetzt SERVER-SEITIG im Backend angewendet.
-     * Die Filter-Handler (handleNameSearch, handleOrganisationFilter, handleRoleFilter)
-     * rufen direkt fetchUsers() auf, welche die Parameter ans Backend sendet.
-     * 
-     * Vorteile:
-     * - Bessere Performance bei großen Datenmengen
-     * - Weniger Netzwerkverkehr (nur gefilterte Daten werden übertragen)
-     * - Geringerer Speicherverbrauch im Browser
-     * - Konsistente Filterlogik (Backend ist Single Source of Truth)
-     */
-
-    // ========== DETAIL-ANSICHT FUNKTIONEN ==========
-
-    /**
-     * Benutzerdetails in Modal anzeigen
-     * @param {string} userId - UUID des anzuzeigenden Benutzers
-     * 
-     * Diese Funktion:
-     * 1. Lädt vollständige Benutzerdaten vom Backend
-     * 2. Öffnet das Detail-Modal
-     * 3. Zeigt die Daten in der BenutzerDetail-Komponente an
-     */
+    // WICHTIG: Alle Filter sind SERVER-SEITIG (bessere Performance bei großen Datenmengen)
     const handleViewDetails = async (userId) => {
         try {
             const response = await userService.getUserById(userId);
-
-            const userData = response.content || response;
-
-            setSelectedUser(userData);
+            setSelectedUser(response.content || response);
             setDetailOpen(true);
         } catch (err) {
             setError('Fehler beim Laden der Benutzerdetails');
         }
     };
 
-    /**
-     * Detail-Modal schließen und State zurücksetzen
-     */
     const handleCloseDetail = () => {
         setDetailOpen(false);
         setSelectedUser(null);
     };
 
-    // ========== LÖSCH-FUNKTIONEN ==========
-
-    /**
-     * Lösch-Bestätigungsdialog öffnen
-     * @param {string} userId - UUID des zu löschenden Benutzers
-     * 
-     * Öffnet einen Bestätigungsdialog, bevor der Benutzer
-     * tatsächlich gelöscht wird (Best Practice: Sicherheitsabfrage)
-     */
     const handleOpenDeleteDialog = (userId) => {
         setDeleteTargetId(userId);
         setDeleteDialogOpen(true);
     };
 
-    /**
-     * Lösch-Bestätigungsdialog schließen ohne zu löschen
-     */
     const handleCloseDeleteDialog = () => {
         setDeleteDialogOpen(false);
         setDeleteTargetId(null);
     };
 
-    /**
-     * Benutzer endgültig löschen (nach Bestätigung)
-     * 
-     * Diese Funktion:
-     * 1. Sendet DELETE-Request an Backend
-     * 2. Entfernt Benutzer aus der lokalen Liste (UI-Update)
-     * 3. Schließt den Bestätigungsdialog
-     * 4. Zeigt Fehlermeldung bei Problemen
-     */
     const handleConfirmDelete = async () => {
         try {
-            // API-Aufruf zum Löschen
             await userService.deleteUser(deleteTargetId);
-
             setUsers(users.filter(user => user.userUid !== deleteTargetId));
-
             handleCloseDeleteDialog();
-
             setError(null);
         } catch (err) {
             setError('Fehler beim Löschen des Benutzers');
@@ -413,53 +211,33 @@ const Benutzerliste = () => {
         }
     };
 
-    // ========== CREATE/EDIT-FUNKTIONEN ==========
-
-    /**
-     * Formular zum Erstellen eines neuen Benutzers öffnen
-     */
     const handleOpenCreateForm = () => {
         setEditingUser(null);
         setFormOpen(true);
     };
 
-    /**
-     * Formular zum Bearbeiten eines Benutzers öffnen
-     * @param {Object} user - Zu bearbeitender Benutzer
-     */
     const handleOpenEditForm = (user) => {
         setEditingUser(user);
         setFormOpen(true);
     };
 
-    /**
-     * Formular schließen und State zurücksetzen
-     */
     const handleCloseForm = () => {
         setFormOpen(false);
         setEditingUser(null);
     };
 
-    /**
-     * Nach erfolgreichem Speichern: Benutzerliste neu laden
-     */
     const handleFormSuccess = () => {
         fetchUsers();
         handleCloseForm();
     };
 
-    // ========== PAGINATION-HANDLER ==========
-
-    const handleChangePage = (event, newPage) => {
-        setPage(newPage);
-    };
+    const handleChangePage = (event, newPage) => setPage(newPage);
 
     const handleChangeRowsPerPage = (event) => {
         setRowsPerPage(parseInt(event.target.value, 10));
         setPage(0);
     };
 
-    // Berechne die anzuzeigenden Benutzer für aktuelle Seite
     const displayedUsers = users.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
     if (loading && users.length === 0) {
@@ -474,7 +252,6 @@ const Benutzerliste = () => {
             width: '100%',
             overflow: 'hidden'
         }}>
-            {/* Moderne Filter Card */}
             <Box sx={{ mb: 3, mx: 2, mt: 2, flexShrink: 0 }}>
                 <Card
                     elevation={0}
@@ -490,7 +267,6 @@ const Benutzerliste = () => {
                         }
                     }}
                 >
-                    {/* Header mit Button */}
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                             <Box sx={{
@@ -575,7 +351,6 @@ const Benutzerliste = () => {
                         </Box>
                     </Box>
 
-                    {/* Filter-Felder */}
                     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2 }}>
                         <TextField
                             fullWidth
@@ -726,7 +501,6 @@ const Benutzerliste = () => {
             ) : (
                 <>
                     {viewMode === 'cards' ? (
-                        /* Moderne Card-Ansicht */
                         <Box sx={{
                             display: 'grid',
                             gridTemplateColumns: {
@@ -775,7 +549,6 @@ const Benutzerliste = () => {
                                             }}
                                             onClick={() => handleViewDetails(user.userUid)}
                                         >
-                                            {/* Avatar & Name */}
                                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                                                 <Box sx={{
                                                     width: 56,
@@ -808,7 +581,6 @@ const Benutzerliste = () => {
                                                 </Box>
                                             </Box>
 
-                                            {/* Email */}
                                             <Box sx={{
                                                 display: 'flex',
                                                 alignItems: 'center',
@@ -829,7 +601,6 @@ const Benutzerliste = () => {
                                                 </Typography>
                                             </Box>
 
-                                            {/* Organisationen & Rollen */}
                                             {activeOrgs.length > 0 && (
                                                 <Box sx={{ mb: 2 }}>
                                                     <Typography variant="caption" sx={{
@@ -853,7 +624,6 @@ const Benutzerliste = () => {
                                                                     border: '1px solid rgba(255, 152, 0, 0.2)',
                                                                 }}
                                                             >
-                                                                {/* Organisation Name */}
                                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                                                                     <BusinessIcon sx={{ fontSize: 16, color: '#FF9800' }} />
                                                                     <Typography variant="body2" sx={{
@@ -864,7 +634,6 @@ const Benutzerliste = () => {
                                                                         {org.orgName}
                                                                     </Typography>
                                                                 </Box>
-                                                                {/* Rollen */}
                                                                 {org.roles && org.roles.length > 0 ? (
                                                                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8 }}>
                                                                         {org.roles.map((role, roleIdx) => (
@@ -910,7 +679,6 @@ const Benutzerliste = () => {
                                                 </Box>
                                             )}
 
-                                            {/* Action Buttons */}
                                             <Box
                                                 className="action-buttons"
                                                 sx={{
@@ -989,7 +757,6 @@ const Benutzerliste = () => {
                             )}
                         </Box>
                     ) : (
-                        /* Moderne Tabellen-Ansicht */
                         <Box sx={{ mx: 2, mb: 3, flex: 1, overflowY: 'auto' }}>
                             <TableContainer
                                 component={Paper}
@@ -1044,7 +811,6 @@ const Benutzerliste = () => {
                                                             },
                                                         }}
                                                     >
-                                                        {/* Benutzer (Avatar + Name) */}
                                                         <TableCell>
                                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                                                 <Avatar
@@ -1066,21 +832,18 @@ const Benutzerliste = () => {
                                                             </Box>
                                                         </TableCell>
 
-                                                        {/* Benutzername */}
                                                         <TableCell>
                                                             <Typography variant="body2" sx={{ color: '#666', fontWeight: 500 }}>
                                                                 @{user.username || '-'}
                                                             </Typography>
                                                         </TableCell>
 
-                                                        {/* E-Mail */}
                                                         <TableCell>
                                                             <Typography variant="body2" sx={{ color: '#4169E1', fontWeight: 500 }}>
                                                                 {user.mail || 'Keine E-Mail'}
                                                             </Typography>
                                                         </TableCell>
 
-                                                        {/* Organisationen & Rollen */}
                                                         <TableCell>
                                                             {activeOrgs.length > 0 ? (
                                                                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -1134,7 +897,6 @@ const Benutzerliste = () => {
                                                             )}
                                                         </TableCell>
 
-                                                        {/* Aktionen */}
                                                         <TableCell align="right">
                                                             <Box
                                                                 className="table-actions"
@@ -1210,7 +972,6 @@ const Benutzerliste = () => {
                         </Box>
                     )}
 
-                    {/* Pagination */}
                     <Box sx={{
                         mx: 2,
                         mb: 2,
@@ -1248,7 +1009,6 @@ const Benutzerliste = () => {
                 </>
             )}
 
-            {/* Detail View Modal */}
             <Dialog open={detailOpen} onClose={handleCloseDetail} maxWidth="md" fullWidth>
                 <DialogTitle sx={{ background: 'linear-gradient(135deg, #4169E1 0%, #2E4CB8 100%)', color: '#FFFFFF', fontWeight: 700, py: 2 }}>
                     Benutzerdetails
@@ -1263,7 +1023,6 @@ const Benutzerliste = () => {
                 </DialogActions>
             </Dialog>
 
-            {/* Delete Confirmation Dialog */}
             <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
                 <DialogTitle sx={{ fontWeight: 700, color: '#D32F2F' }}>
                     Benutzer löschen?
@@ -1281,7 +1040,6 @@ const Benutzerliste = () => {
                 </DialogActions>
             </Dialog>
 
-            {/* Formular für Create/Edit mit Stepper */}
             <BenutzerFormStepper
                 open={formOpen}
                 onClose={handleCloseForm}
