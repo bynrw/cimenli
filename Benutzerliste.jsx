@@ -92,7 +92,7 @@ const Benutzerliste = () => {
     // Suchbegriff für Name/Email-Suche
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Ausgewählte Organisation für Filterung
+    // Ausgewählte Organisation-UUID für Filterung (direkt UUID statt Name)
     const [organisationFilter, setOrganisationFilter] = useState('');
 
     // Aktuell ausgewählter Benutzer für Detailansicht
@@ -107,19 +107,13 @@ const Benutzerliste = () => {
     // ID des zu löschenden Benutzers
     const [deleteTargetId, setDeleteTargetId] = useState(null);
 
-    // Liste aller verfügbaren Organisationen (für Filter-Dropdown)
+    // Liste aller verfügbaren Organisationen als Objekte: [{uuid, label}]
     const [organisations, setOrganisations] = useState([]);
 
-    // Map für Organisation Name -> UUID
-    const [orgNameToUidMap, setOrgNameToUidMap] = useState({});
-
-    // Liste aller verfügbaren Rollen (für Filter-Dropdown)
+    // Liste aller verfügbaren Rollen als Objekte: [{id, label}]
     const [availableRoles, setAvailableRoles] = useState([]);
 
-    // Map für Rollen Name -> ID/UUID
-    const [roleNameToIdMap, setRoleNameToIdMap] = useState({});
-
-    // Ausgewählte Rolle für Filterung
+    // Ausgewählte Rollen-ID für Filterung (direkt ID/UUID statt Name)
     const [roleFilter, setRoleFilter] = useState('');
 
     // Status des Formular-Dialogs (offen/geschlossen)
@@ -225,57 +219,41 @@ const Benutzerliste = () => {
 
     /**
      * Alle verfügbaren Organisationen vom Backend laden
+     * Speichert Objekte mit {uuid, label} direkt für Dropdown-Nutzung
      */
     const fetchOrganisations = async () => {
         try {
             const orgs = await userService.getOrganisations();
-            // API gibt [{uuid, label}] zurück
+            // API gibt [{uuid, label}] zurück - direkt speichern
             if (Array.isArray(orgs)) {
-                const orgLabels = orgs.map(org => org.label).sort();
-                setOrganisations(orgLabels);
-
-                // Map erstellen: Organisationsname -> UUID
-                const nameToUid = {};
-                orgs.forEach(org => {
-                    nameToUid[org.label] = org.uuid;
-                });
-                setOrgNameToUidMap(nameToUid);
-                console.log('Organisations-Map erstellt:', nameToUid);
+                const sortedOrgs = orgs.sort((a, b) => a.label.localeCompare(b.label));
+                setOrganisations(sortedOrgs);
+                console.log('Organisationen geladen:', sortedOrgs);
             }
         } catch (err) {
             console.error('Fehler beim Laden der Organisationen:', err);
             setOrganisations([]);
-            setOrgNameToUidMap({});
         }
     };
 
     /**
      * Alle verfügbaren Rollen vom Backend laden
+     * Speichert Objekte mit {id, label} direkt für Dropdown-Nutzung
      */
     const fetchRoles = async () => {
         try {
             const roles = await userService.getRoles();
             console.log('Geladene Rollen vom Backend:', roles);
 
-            // API gibt uuid statt id zurück - transformieren
+            // API gibt uuid statt id zurück - zu {id, label} transformieren
             const transformedRoles = Array.isArray(roles)
                 ? roles.map(role => ({ id: role.uuid || role.id, label: role.label }))
                 : [];
             setAvailableRoles(transformedRoles);
-
-            // Map erstellen: Rollenname -> UUID/ID (für Backend-Filter)
-            const nameToId = {};
-            if (Array.isArray(roles)) {
-                roles.forEach(role => {
-                    nameToId[role.label] = role.uuid || role.id;
-                });
-            }
-            setRoleNameToIdMap(nameToId);
-            console.log('Rollen-Map erstellt:', nameToId);
+            console.log('Rollen geladen:', transformedRoles);
         } catch (err) {
             console.error('Fehler beim Laden der Rollen:', err);
             setAvailableRoles([]);
-            setRoleNameToIdMap({});
         }
     };
 
@@ -300,9 +278,8 @@ const Benutzerliste = () => {
 
         // Neuen Timer starten (500ms Verzögerung)
         searchTimerRef.current = setTimeout(() => {
-            const orgUid = organisationFilter ? orgNameToUidMap[organisationFilter] : '';
-            const roleId = roleFilter ? roleNameToIdMap[roleFilter] : '';
-            fetchUsers(value, orgUid, roleId);
+            // Filter enthalten bereits UUIDs/IDs - direkt verwenden
+            fetchUsers(value, organisationFilter, roleFilter);
         }, 500);
     };
 
@@ -310,50 +287,37 @@ const Benutzerliste = () => {
      * Handler für Organisations-Filter
      * @param {Event} e - Select-Change-Event
      * 
-     * Wird aufgerufen, wenn eine Organisation im Dropdown ausgewählt wird und löst Backend-Filterung aus
+     * Dropdown liefert direkt die UUID - keine Umwandlung mehr nötig
      */
     const handleOrganisationFilter = (e) => {
-        const orgName = e.target.value;
-        setOrganisationFilter(orgName);
+        const orgUid = e.target.value; // Direkt UUID aus Dropdown
+        setOrganisationFilter(orgUid);
         setPage(0); // Zurück zur ersten Seite
 
-        // Organisation-Name in UUID umwandeln
-        const orgUid = orgName ? orgNameToUidMap[orgName] : '';
-
-        // Rollen-Name in ID umwandeln
-        const roleId = roleFilter ? roleNameToIdMap[roleFilter] : '';
-
-        console.log('Filter Organisation:', { orgName, orgUid, roleId });
+        console.log('Filter Organisation:', { orgUid, roleId: roleFilter });
 
         // Server-Side-Filtering: Backend mit UUID abfragen
-        fetchUsers(searchTerm, orgUid, roleId);
+        fetchUsers(searchTerm, orgUid, roleFilter);
     };
 
     /**
      * Handler für Rollen-Filter
      * @param {Event} e - Select-Change-Event
      * 
-     * Wird aufgerufen, wenn eine Rolle im Dropdown ausgewählt wird und löst Backend-Filterung aus
+     * Dropdown liefert direkt die ID/UUID - keine Umwandlung mehr nötig
      */
     const handleRoleFilter = (e) => {
-        const roleName = e.target.value;
-        setRoleFilter(roleName);
+        const roleId = e.target.value; // Direkt ID/UUID aus Dropdown
+        setRoleFilter(roleId);
         setPage(0); // Zurück zur ersten Seite
 
-        // Organisation-Name in UUID umwandeln
-        const orgUid = organisationFilter ? orgNameToUidMap[organisationFilter] : '';
-
-        // Rollen-Name in ID/UUID umwandeln
-        const roleId = roleName ? roleNameToIdMap[roleName] : '';
-
         console.log('=== Filter Rolle ===');
-        console.log('Rollenname:', roleName);
         console.log('Rollen-ID:', roleId);
         console.log('Suchbegriff:', searchTerm);
-        console.log('Org-UUID:', orgUid);
+        console.log('Org-UUID:', organisationFilter);
 
-        // Server-Side-Filtering: Backend mit roleId (nicht roleName!) abfragen
-        fetchUsers(searchTerm, orgUid, roleId);
+        // Server-Side-Filtering: Backend mit roleId abfragen
+        fetchUsers(searchTerm, organisationFilter, roleId);
     };
 
     /**
@@ -697,8 +661,8 @@ const Benutzerliste = () => {
                         >
                             <option value="">Alle Organisationen</option>
                             {organisations.map((org) => (
-                                <option key={org} value={org}>
-                                    {org}
+                                <option key={org.uuid} value={org.uuid}>
+                                    {org.label}
                                 </option>
                             ))}
                         </TextField>
@@ -736,7 +700,7 @@ const Benutzerliste = () => {
                         >
                             <option value="">Alle Rollen</option>
                             {availableRoles.map((role, index) => (
-                                <option key={role.id || `role-${index}`} value={role.label}>
+                                <option key={role.id || `role-${index}`} value={role.id}>
                                     {role.label}
                                 </option>
                             ))}
